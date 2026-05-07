@@ -64,17 +64,18 @@ def _build_dashboard_excel_bytes_impl() -> bytes:
     sub_font = Font(size=10, color="666666")
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    ws.merge_cells("A1:H1")
+    ws.merge_cells("A1:I1")
     ws["A1"] = "Panel de certificados — variables por alumno"
     ws["A1"].font = title_font
     ws["A1"].alignment = Alignment(vertical="center")
-    ws.merge_cells("A2:H2")
+    ws.merge_cells("A2:I2")
     ws["A2"] = f"Exportado: {now}"
     ws["A2"].font = sub_font
 
     headers = (
         "ID certificado",
         "Alumno",
+        "N° validaciones",
         "Certificado validado",
         "Tiene TV",
         "TV (s)",
@@ -137,21 +138,26 @@ def _build_dashboard_excel_bytes_impl() -> bytes:
     for row in data_rows:
         ws.cell(row=ri, column=1, value=row["id"])
         ws.cell(row=ri, column=2, value=row["name"])
-        ws.cell(row=ri, column=3, value="Sí" if row["valid"] else "No")
-        ws.cell(row=ri, column=4, value="Sí" if row["hasTv"] else "No")
+        ws.cell(row=ri, column=3, value=1)
+        ws.cell(row=ri, column=4, value="Sí" if row["valid"] else "No")
         ws.cell(
             row=ri,
             column=5,
-            value=round(float(row["tv"]), 6) if row["hasTv"] else "—",
+            value="Sí" if row["hasTv"] else "No",
         )
-        ws.cell(row=ri, column=6, value="Sí" if row["hasTgc"] else "No")
         ws.cell(
             row=ri,
-            column=7,
+            column=6,
+            value=round(float(row["tv"]), 6) if row["hasTv"] else "—",
+        )
+        ws.cell(row=ri, column=7, value="Sí" if row["hasTgc"] else "No")
+        ws.cell(
+            row=ri,
+            column=8,
             value=round(float(row["tgc"]), 6) if row["hasTgc"] else "—",
         )
-        ws.cell(row=ri, column=8, value=row["source"])
-        for c in range(1, 9):
+        ws.cell(row=ri, column=9, value=row["source"])
+        for c in range(1, 10):
             _data_cell(ws.cell(row=ri, column=c), wrap=c in (2,))
         ri += 1
 
