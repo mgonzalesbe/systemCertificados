@@ -593,11 +593,21 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
     }, tgc
 
 
-def verificar_certificado(qr_payload_str):
+def verificar_certificado(qr_payload_str, pdf_bytes=None):
+    """
+    Verifica firma del QR frente al registro en BD. Si se pasa pdf_bytes, comprueba
+    además que el nombre y (si el nombre del curso es lo bastante largo) el curso
+    oficial aparezcan en la capa de texto del PDF (anti‑suplantación visual).
+    """
+    from modelo.pdf_visual_integrity import check_official_record_in_pdf_text
+
     start_time = time.perf_counter()
     is_valid = False
     parsed_data = {}
     conn = None
+    crypto_valid = False
+    row = None
+    visual_integrity = "skipped_no_pdf"
 
     try:
         cert_id, cert_sig = _parse_qr_payload(qr_payload_str)
@@ -629,7 +639,32 @@ def verificar_certificado(qr_payload_str):
                     (row.TipoNombre or ""),
                 )
                 if verify_signature(raw_data, cert_sig):
+                    crypto_valid = True
                     is_valid = True
+
+        if pdf_bytes is not None:
+            if crypto_valid and row:
+                code, coherent = check_official_record_in_pdf_text(
+                    pdf_bytes,
+                    str(row.NombreEstudiante or ""),
+                    str(row.CursoNombre or ""),
+                )
+                visual_integrity = code
+                if coherent is False:
+                    is_valid = False
+            else:
+                visual_integrity = "skipped_not_authentic"
+
+        parsed_data["visualIntegrity"] = visual_integrity
+        if row and crypto_valid:
+            fe = row.FechaEmision
+            parsed_data["official"] = {
+                "studentName": str(row.NombreEstudiante or "").strip(),
+                "course": str(row.CursoNombre or "").strip(),
+                "credentialType": str(row.TipoNombre or "").strip(),
+                "issueDate": fe.isoformat() if hasattr(fe, "isoformat") else str(fe or ""),
+                "status": str(row.Estado or ""),
+            }
 
         # Actualizar métricas del certificado en BD
         if conn:
@@ -847,16 +882,17 @@ def _etiqueta_alumno_abreviada(nombre_completo: str) -> str:
 def obtener_dashboard_insights():
     """Devuelve comparativas para graficos del dashboard admin."""
     conn = get_db_connection()
-    default_payload = {
+    empty_insights = {
         "monthly": [],
         "status": {"total": 0, "active": 0, "revoked": 0},
         "topCourses": [],
         "topTypes": [],
         "tvByCertificate": [],
         "genByCertificate": [],
+        "dbAvailable": False,
     }
     if not conn:
-        return default_payload
+        return empty_insights
 
     try:
         cursor = conn.cursor()
@@ -1071,19 +1107,24 @@ def obtener_dashboard_insights():
             "topTypes": top_types,
             "tvByCertificate": tv_by_certificate,
             "genByCertificate": gen_by_certificate,
+            "dbAvailable": True,
         }
     except Exception:
-        return default_payload
+        return empty_insights
     finally:
         conn.close()
 
 
 def buscar_certificados(q=None, page=1, page_size=5):
+    """
+    Devuelve (lista_certificados, total, db_ok).
+    db_ok es False si no hubo conexión o falló la consulta (no confundir con «sin filas»).
+    """
     conn = get_db_connection()
     certs = []
     total = 0
     if not conn:
-        return [], 0
+        return [], 0, False
     try:
         cursor = conn.cursor()
         params = []
@@ -1135,6 +1176,12 @@ def buscar_certificados(q=None, page=1, page_size=5):
                 "tv": getattr(row, "TiempoVerificacionSeg", 0),
                 "isValid": bool(getattr(row, "EsValido", 0)),
             })
+        return certs, total, True
+    except Exception as e:
+        print(f"Error en buscar_certificados: {e}")
+        return [], 0, False
     finally:
-        conn.close()
-    return certs, total
+        try:
+            conn.close()
+        except Exception:
+            pass

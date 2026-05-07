@@ -78,13 +78,42 @@
       </nav>
 
       <main id="interfaces-container">
+        <div
+          id="db-unavailable-banner"
+          class="hidden mb-6 rounded-xl border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm"
+          role="alert"
+        >
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="font-medium pr-2">
+              <span class="font-bold">Sin conexión a la base de datos</span>
+              — Los contadores de métricas pueden seguir mostrando valores en memoria, pero listados y gráficos que dependen de SQL no están disponibles. Tras un rato sin uso, Render o Azure SQL pueden tardar unos segundos en responder el primer acceso.
+            </p>
+            <button
+              type="button"
+              id="btn-retry-db-load"
+              class="shrink-0 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
         <section
           id="dashboard"
           class="interface active p-6 border border-gray-100 rounded-xl bg-gray-50/50"
         >
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">
-            Resumen del sistema
-          </h2>
+          <div
+            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6"
+          >
+            <h2 class="text-2xl font-bold text-gray-800">Resumen del sistema</h2>
+            <button
+              type="button"
+              id="btn-dashboard-export-excel"
+              class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-700 bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 shrink-0"
+            >
+              <span aria-hidden="true">⬇</span>
+              Exportar a Excel
+            </button>
+          </div>
 
           <!-- Contadores principales (sin gráfico al hacer clic) -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

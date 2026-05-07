@@ -1,4 +1,5 @@
 import os
+import time
 from types import SimpleNamespace
 
 import pyodbc
@@ -15,6 +16,8 @@ _TRUSTED = os.environ.get("DB_TRUSTED", "no").lower() in ("1", "true", "yes", "y
 _ENCRYPT = os.environ.get("DB_ENCRYPT", "yes").lower() in ("1", "true", "yes", "y")
 _TRUST_SERVER_CERT = os.environ.get("DB_TRUST_SERVER_CERTIFICATE", "no").lower() in ("1", "true", "yes", "y")
 _CONNECTION_TIMEOUT = int(os.environ.get("DB_CONNECTION_TIMEOUT", "30"))
+_CONNECT_RETRIES = max(1, int(os.environ.get("DB_CONNECT_RETRIES", "5")))
+_CONNECT_RETRY_DELAY = float(os.environ.get("DB_CONNECT_RETRY_DELAY_SEC", "0.6"))
 
 
 def _build_connection_string():
@@ -106,8 +109,8 @@ class _PymssqlConnectionAdapter:
         return getattr(self._raw, name)
 
 
-def get_db_connection():
-    """Establece y devuelve la conexión a la base de datos."""
+def _get_db_connection_once():
+    """Un intento de conexión (pyodbc, luego pymssql si aplica)."""
     try:
         conn = pyodbc.connect(DB_CONNECTION_STRING)
         return conn
@@ -132,6 +135,25 @@ def get_db_connection():
                 return None
         print(f"ADVERTENCIA: No se pudo conectar a SQL Server. Error: {e}")
         return None
+
+
+def get_db_connection():
+    """
+    Conexión a SQL Server con reintentos (Azure / Render: arranque en frío, firewall, pausa serverless).
+
+    Variables opcionales: DB_CONNECT_RETRIES (default 5), DB_CONNECT_RETRY_DELAY_SEC (default 0.6).
+    """
+    for attempt in range(_CONNECT_RETRIES):
+        conn = _get_db_connection_once()
+        if conn:
+            if attempt > 0:
+                print(f"Conexión SQL establecida tras {attempt + 1} intento(s).")
+            return conn
+        if attempt < _CONNECT_RETRIES - 1:
+            delay = _CONNECT_RETRY_DELAY * (attempt + 1)
+            time.sleep(delay)
+    print(f"ADVERTENCIA: Sin conexión a SQL tras {_CONNECT_RETRIES} intento(s).")
+    return None
 
 
 def _table_exists(cursor, nombre_tabla: str) -> bool:

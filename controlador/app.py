@@ -868,6 +868,28 @@ def get_dashboard_insights():
     return jsonify(certificado.obtener_dashboard_insights())
 
 
+@app.route('/api/dashboard/export-excel', methods=['GET'])
+@login_required_api
+@admin_required_api
+def dashboard_export_excel():
+    from datetime import datetime, timezone
+
+    from modelo.dashboard_excel_export import build_dashboard_excel_bytes
+
+    raw = build_dashboard_excel_bytes()
+    if not raw:
+        return jsonify({"success": False, "error": "No se pudo generar el archivo"}), 503
+    buf = BytesIO(raw)
+    buf.seek(0)
+    fn = f"panel_certificados_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name=fn,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 # --- Verificación pública (cámara o datos) ---
 
 @app.route('/api/verify', methods=['POST'])
@@ -909,7 +931,7 @@ def verify_pdf_upload():
             "data": {},
         }), 200
 
-    is_valid, tiempo_tv, parsed_data = certificado.verificar_certificado(payload)
+    is_valid, tiempo_tv, parsed_data = certificado.verificar_certificado(payload, pdf_bytes=raw)
     return jsonify({
         "isValid": is_valid,
         "time": tiempo_tv,
@@ -986,15 +1008,27 @@ def api_certificates():
         if page_size < 1: page_size = 5
     except Exception:
         page, page_size = 1, 5
-    certs, total = certificado.buscar_certificados(q, page, page_size)
-    total_pages = (total + page_size - 1) // page_size
+    certs, total, db_ok = certificado.buscar_certificados(q, page, page_size)
+    total_pages = (total + page_size - 1) // page_size if page_size else 1
+    if not db_ok:
+        return jsonify({
+            "success": False,
+            "error": "No se pudo conectar con la base de datos. Suele ocurrir tras un periodo de inactividad (servidor o SQL en frío). Pulse Reintentar o espere unos segundos.",
+            "certificates": [],
+            "total": 0,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": 1,
+            "dbAvailable": False,
+        }), 503
     return jsonify({
         "success": True,
         "certificates": certs,
         "total": total,
         "page": page,
         "page_size": page_size,
-        "total_pages": total_pages
+        "total_pages": total_pages,
+        "dbAvailable": True,
     })
 
 

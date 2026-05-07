@@ -1,5 +1,24 @@
 const fetchOpts = { credentials: "same-origin" };
 
+/** null = aún no cargado; true/false = último resultado (para banner de SQL) */
+const adminDbHealth = { certificates: null, insights: null };
+
+function syncDbUnavailableBanner() {
+  const el = document.getElementById("db-unavailable-banner");
+  if (!el) return;
+  const show =
+    adminDbHealth.certificates === false || adminDbHealth.insights === false;
+  el.classList.toggle("hidden", !show);
+}
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function setupPasswordToggle(inputId, btnId) {
   const input = document.getElementById(inputId);
   const btn = document.getElementById(btnId);
@@ -1030,6 +1049,46 @@ function refreshDashboardVisuals() {
   }
 }
 
+async function exportDashboardExcel() {
+  const btn = document.getElementById("btn-dashboard-export-excel");
+  if (!btn) return;
+  const label = btn.querySelector("span:last-child") || btn;
+  const prev = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML =
+    '<span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true"></span> Generando…';
+  try {
+    const r = await fetch("/api/dashboard/export-excel", { ...fetchOpts });
+    if (r.status === 401 || r.status === 403) {
+      window.location.href = "/";
+      return;
+    }
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.error || "Error al generar el Excel");
+    }
+    const blob = await r.blob();
+    const cd = r.headers.get("Content-Disposition") || "";
+    const m = /filename\*?=(?:UTF-8'')?["']?([^"';]+)/i.exec(cd);
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:-]/g, "").replace("T", "_");
+    const name = m ? decodeURIComponent(m[1].trim()) : `panel_certificados_${ts}.xlsx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert(e.message || "No se pudo descargar el Excel.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = prev;
+  }
+}
+
 async function loadCoursesIntoSelect() {
   const searchEl = document.getElementById("input-course-search");
   const hiddenEl = document.getElementById("input-course-id");
@@ -1600,8 +1659,21 @@ async function loadCertificatesData() {
       window.location.href = "/";
       return;
     }
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 503) {
+      adminDbHealth.certificates = false;
+      syncDbUnavailableBanner();
+      const msg =
+        data.error ||
+        "Base de datos no disponible. Pulse «Reintentar» o espere unos segundos.";
+      tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-amber-800 font-semibold">${escapeHtml(msg)}</td></tr>`;
+      emptyMsg.classList.add("hidden");
+      renderCertPagination();
+      return;
+    }
     if (!response.ok) throw new Error();
-    const data = await response.json();
+    adminDbHealth.certificates = true;
+    syncDbUnavailableBanner();
     const certs = data.certificates || [];
     certTotalPages = data.total_pages || 1;
     tbody.replaceChildren();
@@ -1615,8 +1687,10 @@ async function loadCertificatesData() {
     }
     renderCertPagination();
   } catch {
+    adminDbHealth.certificates = false;
+    syncDbUnavailableBanner();
     tbody.innerHTML =
-      '<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">Error al cargar certificados.</td></tr>';
+      '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Error al cargar certificados.</td></tr>';
     emptyMsg.classList.add("hidden");
     renderCertPagination();
   }
@@ -1725,8 +1799,23 @@ function loadStatistics() {
 
 function loadDashboardInsights() {
   fetch("/api/dashboard/insights", fetchOpts)
-    .then((r) => (r.ok ? r.json() : {}))
+    .then(async (r) => {
+      if (r.status === 401 || r.status === 403) {
+        window.location.href = "/";
+        return null;
+      }
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        adminDbHealth.insights = false;
+        syncDbUnavailableBanner();
+        return null;
+      }
+      adminDbHealth.insights = data.dbAvailable !== false;
+      syncDbUnavailableBanner();
+      return data;
+    })
     .then((data) => {
+      if (!data) return;
       dashboardInsights.monthly = Array.isArray(data.monthly) ? data.monthly : [];
       dashboardInsights.status = data.status || { total: 0, active: 0, revoked: 0 };
       dashboardInsights.topCourses = Array.isArray(data.topCourses) ? data.topCourses : [];
@@ -1741,7 +1830,10 @@ function loadDashboardInsights() {
         renderDrillChart(selectedDashboardMetric);
       }
     })
-    .catch(() => {});
+    .catch(() => {
+      adminDbHealth.insights = false;
+      syncDbUnavailableBanner();
+    });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1751,6 +1843,24 @@ document.addEventListener("DOMContentLoaded", () => {
   loadStatistics();
   loadDashboardInsights();
   loadCatalogs().catch(() => {});
+  const btnXlsx = document.getElementById("btn-dashboard-export-excel");
+  if (btnXlsx) {
+    btnXlsx.addEventListener("click", () => {
+      exportDashboardExcel();
+    });
+  }
+  const btnRetryDb = document.getElementById("btn-retry-db-load");
+  if (btnRetryDb) {
+    btnRetryDb.addEventListener("click", () => {
+      adminDbHealth.certificates = null;
+      adminDbHealth.insights = null;
+      syncDbUnavailableBanner();
+      loadCertificatesData();
+      loadStatistics();
+      loadDashboardInsights();
+      loadCatalogs().catch(() => {});
+    });
+  }
 });
 
 // --- Catálogos: alta de cursos y tipos ---
