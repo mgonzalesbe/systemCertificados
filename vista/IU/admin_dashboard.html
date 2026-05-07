@@ -11,9 +11,9 @@
     />
   </head>
   <body
-    class="min-h-screen flex items-center justify-center p-4 bg-gray-100 text-gray-800 font-sans"
+    class="app-shell min-h-screen flex items-center justify-center p-4 text-gray-800 font-sans"
   >
-    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl w-full max-w-6xl">
+    <div class="app-surface p-6 md:p-8 rounded-2xl w-full max-w-6xl">
       <header
         class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8"
       >
@@ -983,6 +983,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='javascript/theme.js') }}"></script>
     <script src="{{ url_for('static', filename='javascript/admin.js') }}"></script>
   </body>
 </html>

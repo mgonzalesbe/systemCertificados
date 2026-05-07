@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
   </head>
-  <body class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
-    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg border border-slate-200">
+  <body class="app-shell min-h-screen flex items-center justify-center p-4">
+    <div class="app-surface rounded-2xl p-8 w-full max-w-lg">
       <p class="text-center mb-2">
         <a href="/" class="text-sm text-blue-600 hover:underline">← Volver al inicio de sesión</a>
       </p>
@@ -33,6 +33,7 @@
 
       <div id="result-verify" class="mt-6 p-4 rounded-lg text-center text-sm font-medium hidden min-h-[3rem]"></div>
     </div>
+    <script src="{{ url_for('static', filename='javascript/theme.js') }}"></script>
     <script src="{{ url_for('static', filename='javascript/verificar_publico.js') }}"></script>
   </body>
 </html>

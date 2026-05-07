@@ -3,14 +3,270 @@
    ========================================================================== */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
+:root {
+  --brand-900: #0f2a5f;
+  --brand-700: #1e40af;
+  --brand-500: #3b82f6;
+  --surface-soft: rgba(255, 255, 255, 0.88);
+  --surface-border: rgba(148, 163, 184, 0.24);
+  --ring-soft: rgba(59, 130, 246, 0.22);
+  --shadow-soft:
+    0 10px 30px rgba(2, 6, 23, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
 body {
   font-family: "Inter", sans-serif;
+  color: #0f172a;
+  background:
+    radial-gradient(1200px 520px at -5% -10%, rgba(59, 130, 246, 0.18), transparent 65%),
+    radial-gradient(980px 460px at 110% -15%, rgba(14, 165, 233, 0.14), transparent 62%),
+    linear-gradient(180deg, #eef2ff 0%, #f8fafc 55%, #f8fafc 100%);
+}
+
+body.dark-theme {
+  color: #e2e8f0;
+  background:
+    radial-gradient(1100px 500px at -10% -15%, rgba(59, 130, 246, 0.2), transparent 65%),
+    radial-gradient(960px 460px at 110% -10%, rgba(14, 165, 233, 0.16), transparent 60%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 55%, #111827 100%);
 }
 
 /* Un solo control para mostrar contraseña: oculta el icono nativo de Edge/IE */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   display: none;
+}
+
+/* ==========================================================================
+   Base visual compartida
+   ========================================================================== */
+.app-shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+.app-surface {
+  background: var(--surface-soft);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-soft);
+}
+
+body.dark-theme .app-surface {
+  background: rgba(15, 23, 42, 0.78);
+  border-color: rgba(100, 116, 139, 0.35);
+  box-shadow:
+    0 18px 42px rgba(2, 6, 23, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+}
+
+a {
+  transition: color 0.18s ease;
+}
+
+button,
+input,
+select,
+textarea {
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-color: #cbd5e1 !important;
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+body.dark-theme input:not([type="checkbox"]):not([type="radio"]),
+body.dark-theme select,
+body.dark-theme textarea {
+  background-color: rgba(15, 23, 42, 0.92);
+  border-color: rgba(100, 116, 139, 0.55) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme input::placeholder,
+body.dark-theme textarea::placeholder {
+  color: #94a3b8;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: none;
+  border-color: #60a5fa !important;
+  box-shadow:
+    0 0 0 4px var(--ring-soft),
+    0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* ==========================================================================
+   Dashboard/Admin refinements
+   ========================================================================== */
+#main-nav {
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 0.55rem;
+  border-radius: 0.9rem;
+}
+
+#main-nav .nav-btn {
+  border-radius: 0.7rem;
+}
+
+.nav-btn.bg-gray-200 {
+  background: rgba(226, 232, 240, 0.65) !important;
+}
+
+.nav-btn.bg-blue-600 {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow:
+    0 8px 16px rgba(37, 99, 235, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+#interfaces-container .interface {
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  background: rgba(248, 250, 252, 0.62) !important;
+}
+
+#dashboard .dashboard-chart-card,
+#dashboard #card-generated,
+#dashboard #card-verifications {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+#dashboard .dashboard-chart-card:hover {
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.14);
+  transform: translateY(-2px);
+}
+
+#manage table,
+#catalogs table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#manage thead,
+#catalogs thead {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9) !important;
+}
+
+#manage tbody tr:hover,
+#catalogs tbody tr:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+#db-unavailable-banner {
+  border-color: #f59e0b !important;
+  background: linear-gradient(180deg, rgba(254, 243, 199, 0.7), rgba(255, 251, 235, 0.84));
+}
+
+body.dark-theme #main-nav {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(100, 116, 139, 0.35);
+}
+
+body.dark-theme #interfaces-container .interface {
+  background: rgba(15, 23, 42, 0.45) !important;
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+body.dark-theme #dashboard .dashboard-chart-card,
+body.dark-theme #dashboard #card-generated,
+body.dark-theme #dashboard #card-verifications,
+body.dark-theme .bg-white,
+body.dark-theme .bg-gray-50 {
+  background: rgba(15, 23, 42, 0.88) !important;
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+body.dark-theme .text-gray-800,
+body.dark-theme .text-gray-700 {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .text-gray-600,
+body.dark-theme .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .border-gray-100,
+body.dark-theme .border-gray-200,
+body.dark-theme .border-gray-300 {
+  border-color: rgba(100, 116, 139, 0.4) !important;
+}
+
+body.dark-theme .bg-gray-100,
+body.dark-theme .bg-gray-200 {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-theme #manage tbody tr:hover,
+body.dark-theme #catalogs tbody tr:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+body.dark-theme #db-unavailable-banner {
+  background: linear-gradient(180deg, rgba(146, 64, 14, 0.25), rgba(120, 53, 15, 0.2));
+  border-color: rgba(251, 191, 36, 0.6) !important;
+}
+
+body.dark-theme .custom-modal-content {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(100, 116, 139, 0.45);
+  color: #e2e8f0;
+}
+
+.theme-toggle {
+  position: fixed;
+  right: 1rem;
+  top: 1rem;
+  z-index: 80;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: rgba(255, 255, 255, 0.86);
+  color: #0f172a;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.13);
+  backdrop-filter: blur(8px);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+}
+
+body.dark-theme .theme-toggle {
+  background: rgba(15, 23, 42, 0.88);
+  color: #e2e8f0;
+  border-color: rgba(100, 116, 139, 0.45);
 }
 
 /* ==========================================================================
@@ -31,7 +287,7 @@ input[type="password"]::-ms-clear {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -78,14 +334,15 @@ input[type="password"]::-ms-clear {
 }
 
 .custom-modal-content {
-  background: white;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.25);
   padding: 2rem;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   max-width: 28rem;
   width: 90%;
   box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    0 24px 48px -10px rgba(15, 23, 42, 0.24),
+    0 10px 14px -6px rgba(15, 23, 42, 0.1);
   text-align: center;
 }
 
