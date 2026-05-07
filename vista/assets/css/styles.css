@@ -24,6 +24,24 @@ body {
     linear-gradient(180deg, #eef2ff 0%, #f8fafc 55%, #f8fafc 100%);
 }
 
+body:not(.dark-theme) .app-surface {
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9)),
+    radial-gradient(500px 220px at 6% -8%, rgba(59, 130, 246, 0.08), transparent 72%);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow:
+    0 22px 44px rgba(15, 23, 42, 0.1),
+    0 6px 16px rgba(59, 130, 246, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+}
+
+body:not(.dark-theme) .app-surface > header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 1rem;
+  margin-bottom: 1.6rem !important;
+}
+
 body.dark-theme {
   color: #e2e8f0;
   background:
@@ -46,11 +64,39 @@ input[type="password"]::-ms-clear {
   position: relative;
 }
 
+.app-shell::before,
+.app-shell::after {
+  content: "";
+  position: fixed;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(20px);
+}
+
+.app-shell::before {
+  width: 360px;
+  height: 360px;
+  left: -110px;
+  top: -130px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.2), transparent 68%);
+}
+
+.app-shell::after {
+  width: 320px;
+  height: 320px;
+  right: -120px;
+  bottom: -150px;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.18), transparent 68%);
+}
+
 .app-surface {
   background: var(--surface-soft);
   backdrop-filter: blur(10px);
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
+  position: relative;
+  z-index: 1;
 }
 
 body.dark-theme .app-surface {
@@ -65,6 +111,15 @@ h1,
 h2,
 h3 {
   letter-spacing: -0.02em;
+}
+
+body:not(.dark-theme) h1 {
+  color: #0b2a66 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+body:not(.dark-theme) h2 {
+  color: #0f2f74 !important;
 }
 
 a {
@@ -96,6 +151,14 @@ textarea {
   border-color: #cbd5e1 !important;
   background-color: rgba(255, 255, 255, 0.96);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border-radius: 0.85rem !important;
+}
+
+body:not(.dark-theme) input:not([type="checkbox"]):not([type="radio"]),
+body:not(.dark-theme) select,
+body:not(.dark-theme) textarea {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border-color: rgba(148, 163, 184, 0.45) !important;
 }
 
 body.dark-theme input:not([type="checkbox"]):not([type="radio"]),
@@ -132,12 +195,27 @@ button:focus-visible {
   border-radius: 0.9rem;
 }
 
+body:not(.dark-theme) #main-nav {
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.82), rgba(226, 232, 240, 0.7));
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.08) inset;
+  border-radius: 1rem;
+}
+
 #main-nav .nav-btn {
   border-radius: 0.7rem;
 }
 
 .nav-btn.bg-gray-200 {
   background: rgba(226, 232, 240, 0.65) !important;
+}
+
+body:not(.dark-theme) .nav-btn.bg-gray-200 {
+  background: rgba(226, 232, 240, 0.96) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #334155 !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
 }
 
 .nav-btn.bg-blue-600 {
@@ -147,9 +225,25 @@ button:focus-visible {
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
+body:not(.dark-theme) .nav-btn.bg-blue-600 {
+  box-shadow:
+    0 14px 24px rgba(37, 99, 235, 0.34),
+    0 4px 10px rgba(30, 64, 175, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
 #interfaces-container .interface {
   border: 1px solid rgba(148, 163, 184, 0.2) !important;
   background: rgba(248, 250, 252, 0.62) !important;
+}
+
+body:not(.dark-theme) #interfaces-container .interface {
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(248, 250, 252, 0.88)) !important;
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
 
 #dashboard .dashboard-chart-card,
@@ -160,9 +254,24 @@ button:focus-visible {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
+body:not(.dark-theme) #dashboard .dashboard-chart-card,
+body:not(.dark-theme) #dashboard #card-generated,
+body:not(.dark-theme) #dashboard #card-verifications {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)) !important;
+}
+
 #dashboard .dashboard-chart-card:hover {
   box-shadow: 0 12px 30px rgba(37, 99, 235, 0.14);
   transform: translateY(-2px);
+}
+
+body:not(.dark-theme) #dashboard .dashboard-chart-card:hover {
+  box-shadow:
+    0 18px 36px rgba(37, 99, 235, 0.2),
+    0 4px 12px rgba(2, 6, 23, 0.08);
 }
 
 #manage table,
@@ -171,14 +280,112 @@ button:focus-visible {
   border-spacing: 0;
 }
 
+body:not(.dark-theme) #manage .overflow-x-auto,
+body:not(.dark-theme) #catalogs .overflow-x-auto {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 14px 28px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  padding: 0.35rem;
+}
+
 #manage thead,
 #catalogs thead {
   background: linear-gradient(180deg, #f8fafc, #f1f5f9) !important;
 }
 
+body:not(.dark-theme) #manage thead th,
+body:not(.dark-theme) #catalogs thead th {
+  color: #334155 !important;
+  letter-spacing: 0.05em;
+}
+
 #manage tbody tr:hover,
 #catalogs tbody tr:hover {
   background: rgba(37, 99, 235, 0.05);
+}
+
+body:not(.dark-theme) #manage tbody tr:nth-child(even),
+body:not(.dark-theme) #catalogs tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, 0.7);
+}
+
+body:not(.dark-theme) #manage tbody tr:hover,
+body:not(.dark-theme) #catalogs tbody tr:hover {
+  background: linear-gradient(90deg, rgba(219, 234, 254, 0.55), rgba(224, 242, 254, 0.3));
+}
+
+body:not(.dark-theme) #manage td,
+body:not(.dark-theme) #catalogs td {
+  color: #1e293b;
+}
+
+body:not(.dark-theme) .bg-blue-600 {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+}
+
+body:not(.dark-theme) .bg-emerald-600 {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+}
+
+body:not(.dark-theme) .bg-gray-800 {
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+}
+
+body:not(.dark-theme) .rounded-lg {
+  border-radius: 0.8rem !important;
+}
+
+body:not(.dark-theme) .rounded-xl {
+  border-radius: 1rem !important;
+}
+
+body:not(.dark-theme) #cert-pagination button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: linear-gradient(180deg, #ffffff, #f1f5f9) !important;
+  color: #334155;
+  border-radius: 0.7rem;
+  min-width: 2.2rem;
+}
+
+body:not(.dark-theme) #cert-pagination button.bg-blue-600 {
+  color: #fff !important;
+  border-color: rgba(30, 64, 175, 0.45);
+}
+
+body:not(.dark-theme) #table-body-certs a {
+  color: #1d4ed8 !important;
+  text-underline-offset: 3px;
+}
+
+body:not(.dark-theme) #table-body-certs a:hover {
+  color: #1e40af !important;
+}
+
+body:not(.dark-theme) #table-body-certs .bg-emerald-100 {
+  background: linear-gradient(180deg, #dcfce7, #bbf7d0) !important;
+  border: 1px solid rgba(22, 163, 74, 0.24);
+}
+
+body:not(.dark-theme) #table-body-certs .bg-rose-100 {
+  background: linear-gradient(180deg, #ffe4e6, #fecdd3) !important;
+  border: 1px solid rgba(244, 63, 94, 0.24);
+}
+
+body:not(.dark-theme) #table-body-certs .text-rose-600,
+body:not(.dark-theme) #table-body-certs .text-emerald-600 {
+  font-weight: 700;
+}
+
+body:not(.dark-theme) .shadow-sm,
+body:not(.dark-theme) .shadow-md,
+body:not(.dark-theme) .shadow-lg,
+body:not(.dark-theme) .shadow-xl {
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(59, 130, 246, 0.06) !important;
 }
 
 #db-unavailable-banner {
@@ -189,6 +396,14 @@ button:focus-visible {
 body.dark-theme #main-nav {
   background: rgba(15, 23, 42, 0.45);
   border-color: rgba(100, 116, 139, 0.35);
+}
+
+body.dark-theme .app-shell::before {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.18), transparent 70%);
+}
+
+body.dark-theme .app-shell::after {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.14), transparent 70%);
 }
 
 body.dark-theme #interfaces-container .interface {
