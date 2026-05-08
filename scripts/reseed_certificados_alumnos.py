@@ -17,6 +17,9 @@ Uso:
 Opcional:
   --admin-user admin
   --issue-date 2026-05-07
+  --students-group-a 17
+  --validations-group-a 3
+  --validations-group-b 2
   --dry-run
 """
 from __future__ import annotations
@@ -201,8 +204,16 @@ def main() -> int:
     ap.add_argument("--csv-path", required=True)
     ap.add_argument("--admin-user", default="admin")
     ap.add_argument("--issue-date", default=date.today().isoformat())
+    ap.add_argument("--students-group-a", type=int, default=17)
+    ap.add_argument("--validations-group-a", type=int, default=3)
+    ap.add_argument("--validations-group-b", type=int, default=2)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    if args.students_group_a < 0:
+        raise ReseedError("--students-group-a no puede ser negativo.")
+    if args.validations_group_a < 1 or args.validations_group_b < 1:
+        raise ReseedError("Las validaciones por grupo deben ser >= 1.")
 
     csv_rows = _read_csv(args.csv_path)
     conn = get_db_connection()
@@ -253,8 +264,12 @@ def main() -> int:
 
         generated = 0
         verified = 0
+        total_validations = 0
         for i, a in enumerate(alumnos):
             centro_id = center_ids[i % len(center_ids)]
+            validations_for_cert = (
+                args.validations_group_a if i < args.students_group_a else args.validations_group_b
+            )
             payload = {
                 "name": a.full_name,
                 "date": args.issue_date,
@@ -267,16 +282,22 @@ def main() -> int:
             }
             cert, _tgc = certificado.crear_certificado(payload, created_by_user_id=admin_id)
             generated += 1
-            is_valid, _tv, _parsed = certificado.verificar_certificado(cert["qrPayload"])
-            if is_valid:
+            all_valid = True
+            for _ in range(validations_for_cert):
+                is_valid, _tv, _parsed = certificado.verificar_certificado(cert["qrPayload"])
+                total_validations += 1
+                all_valid = all_valid and bool(is_valid)
+            if all_valid:
                 verified += 1
             print(
-                f"[{i+1:02d}/{len(alumnos)}] {a.dni} | {a.full_name} | centro={centro_id} | cert={cert.get('id')} | valid={is_valid}"
+                f"[{i+1:02d}/{len(alumnos)}] {a.dni} | {a.full_name} | centro={centro_id} | cert={cert.get('id')} | "
+                f"validations={validations_for_cert} | valid={all_valid}"
             )
 
         print("\nProceso completado.")
         print(f"Generados: {generated}")
         print(f"Verificados válidos: {verified}")
+        print(f"Total validaciones ejecutadas: {total_validations}")
         return 0
     finally:
         try:
