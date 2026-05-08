@@ -29,7 +29,7 @@ def main() -> int:
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--dry-run", action="store_true")
     mode.add_argument("--apply", action="store_true")
-    ap.add_argument("--name-like", default="", help="Filtrar por nombre de centro (LIKE %x%).")
+    ap.add_argument("--name-like", default="", help="Filtrar por nombre de centro (LIKE %%x%%).")
     args = ap.parse_args()
 
     conn = get_db_connection()
