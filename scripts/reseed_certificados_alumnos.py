@@ -192,6 +192,21 @@ def _delete_old_certs(conn, user_ids: list[int]) -> int:
     if not user_ids:
         return 0
     cur = conn.cursor()
+    # Evita conflicto con FK_Estadisticas_UltimoCertificado cuando
+    # el último certificado registrado pertenece al lote a eliminar.
+    placeholders = ",".join(["?"] * len(user_ids))
+    cur.execute(
+        f"""
+        UPDATE EstadisticasAplicacion
+        SET IdUltimoCertificadoGenerado = NULL
+        WHERE IdUltimoCertificadoGenerado IN (
+            SELECT IdCertificado
+            FROM Certificados
+            WHERE IdUsuarioDestinatario IN ({placeholders})
+        )
+        """,
+        tuple(user_ids),
+    )
     deleted = 0
     for uid in user_ids:
         cur.execute("DELETE FROM Certificados WHERE IdUsuarioDestinatario = ?", (uid,))
