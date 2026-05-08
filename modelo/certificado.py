@@ -709,7 +709,8 @@ def verificar_certificado(qr_payload_str, pdf_bytes=None):
                 cursor.execute(
                     """
                     UPDATE Certificados 
-                    SET TiempoVerificacionSeg = ?, EsValido = ? 
+                    SET TiempoVerificacionSeg = ?, EsValido = ?,
+                        NumeroValidaciones = ISNULL(NumeroValidaciones, 0) + 1
                     WHERE IdCertificado = ?
                     """,
                     (time.perf_counter() - start_time, 1 if is_valid else 0, cert_id)
@@ -1050,13 +1051,14 @@ def obtener_dashboard_insights():
 
         cursor.execute(
             """
-            SELECT x.IdCertificado, x.NombreEstudiante, x.TvSeg, x.EsValido, x.TieneTv
+            SELECT x.IdCertificado, x.NombreEstudiante, x.TvSeg, x.EsValido, x.TieneTv, x.NumeroValidaciones
             FROM (
                 SELECT TOP 50
                     c.IdCertificado,
                     c.NombreEstudiante,
                     c.TiempoVerificacionSeg AS TvSeg,
                     CAST(ISNULL(c.EsValido, 0) AS INT) AS EsValido,
+                    CAST(ISNULL(c.NumeroValidaciones, 0) AS INT) AS NumeroValidaciones,
                     c.FechaCreacion,
                     CAST(CASE WHEN c.TiempoVerificacionSeg IS NULL THEN 0 ELSE 1 END AS INT) AS TieneTv
                 FROM Certificados c
@@ -1088,6 +1090,7 @@ def obtener_dashboard_insights():
                     "tv": float(tv_raw) if tiene_tv and tv_raw is not None else 0.0,
                     "hasTv": tiene_tv,
                     "valid": bool(int(getattr(r, "EsValido", 0) or 0)),
+                    "validationCount": int(getattr(r, "NumeroValidaciones", 0) or 0),
                 }
             )
 

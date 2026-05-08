@@ -392,6 +392,10 @@ def _migrate_certificados_columns(cursor):
         cursor.execute("ALTER TABLE Certificados ADD IdFirmaDoctores INT NULL")
     if not _column_exists(cursor, "Certificados", "IdTextoCuerpoCatalogo"):
         cursor.execute("ALTER TABLE Certificados ADD IdTextoCuerpoCatalogo INT NULL")
+    if not _column_exists(cursor, "Certificados", "NumeroValidaciones"):
+        cursor.execute(
+            "ALTER TABLE Certificados ADD NumeroValidaciones INT NOT NULL CONSTRAINT DF_Certificados_NumeroValidaciones DEFAULT 0"
+        )
     _drop_horas_formacion_columns(cursor)
     _drop_meses_formacion_columns(cursor)
 
@@ -438,6 +442,7 @@ def _create_certificados_fresh(cursor):
             FechaCreacion DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
             TiempoGeneracionSeg FLOAT NULL,
             TiempoVerificacionSeg FLOAT NULL,
+            NumeroValidaciones INT NOT NULL DEFAULT 0,
             EsValido BIT NULL,
             IdCentroEducativo INT NULL,
             IdFirmaDoctores INT NULL,

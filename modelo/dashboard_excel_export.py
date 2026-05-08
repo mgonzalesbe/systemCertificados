@@ -102,6 +102,7 @@ def _build_dashboard_excel_bytes_impl() -> bytes:
             "valid": bool(r.get("valid")),
             "hasTv": bool(r.get("hasTv")),
             "tv": float(r.get("tv") or 0.0),
+            "validationCount": int(r.get("validationCount") or 0),
             "hasTgc": False,
             "tgc": 0.0,
             "source": "TV",
@@ -119,6 +120,7 @@ def _build_dashboard_excel_bytes_impl() -> bytes:
                 "valid": False,
                 "hasTv": False,
                 "tv": 0.0,
+                "validationCount": 0,
                 "hasTgc": False,
                 "tgc": 0.0,
                 "source": "TGC",
@@ -138,7 +140,7 @@ def _build_dashboard_excel_bytes_impl() -> bytes:
     for row in data_rows:
         ws.cell(row=ri, column=1, value=row["id"])
         ws.cell(row=ri, column=2, value=row["name"])
-        ws.cell(row=ri, column=3, value=1)
+        ws.cell(row=ri, column=3, value=int(row.get("validationCount") or 0))
         ws.cell(row=ri, column=4, value="Sí" if row["valid"] else "No")
         ws.cell(
             row=ri,
