@@ -106,10 +106,29 @@ def _fetch_admin_id(conn, admin_user: str) -> int:
 def _fetch_active_ids(conn, table: str, id_col: str) -> list[int]:
     cur = conn.cursor()
     cur.execute(
+        """
+        SELECT name
+        FROM sys.columns
+        WHERE object_id = OBJECT_ID(?) AND name IN (N'Activo', N'Estado')
+        ORDER BY CASE WHEN name = N'Activo' THEN 0 ELSE 1 END
+        """,
+        (table,),
+    )
+    cols = [str(r[0]) for r in cur.fetchall()]
+    if not cols:
+        raise ReseedError(f"La tabla {table} no tiene columna Activo/Estado para filtrar activos.")
+
+    col = cols[0]
+    if col.lower() == "activo":
+        where = "Activo = 1"
+    else:
+        where = "Estado = N'Activo'"
+
+    cur.execute(
         f"""
         SELECT {id_col}
         FROM {table}
-        WHERE Estado = 'Activo'
+        WHERE {where}
         ORDER BY {id_col} ASC
         """
     )
