@@ -17,7 +17,8 @@ def strip_uniform_background_to_png(image_bytes: bytes, rgb_tolerance: int = 42)
     buf_in = io.BytesIO(image_bytes)
     im = Image.open(buf_in)
     im = im.convert("RGBA")
-    arr = np.asarray(im, dtype=np.uint8)
+    # Asegurar buffer escribible (np.asarray puede devolver vista read-only según backend/Pillow)
+    arr = np.array(im, dtype=np.uint8, copy=True)
     h, w = arr.shape[0], arr.shape[1]
     if h < 2 or w < 2:
         out = Image.fromarray(arr, "RGBA")
