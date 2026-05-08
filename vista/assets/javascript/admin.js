@@ -1789,9 +1789,6 @@ function loadStatistics() {
       dashboardState.invalid = toFiniteNumber(stats.invalidCount || 0);
       dashboardState.avgGen = toFiniteNumber(stats.avgGenTime || 0);
       dashboardState.avgVer = toFiniteNumber(stats.avgVerTime || 0);
-      if (!dashboardState.generated) {
-        dashboardState.generated = toFiniteNumber(stats.genCount || 0);
-      }
       refreshDashboardVisuals();
     })
     .catch(() => {});

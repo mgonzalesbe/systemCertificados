@@ -854,6 +854,12 @@ def toggle_status():
 @login_required_api
 @admin_required_api
 def get_stats():
+    # Refrescar desde BD para evitar desfase de contadores en memoria
+    # cuando se hacen limpiezas manuales/migraciones por script.
+    try:
+        certificado.init_stats_from_db()
+    except Exception:
+        pass
     estadisticas = certificado.obtener_estadisticas()
     return jsonify(estadisticas)
 
