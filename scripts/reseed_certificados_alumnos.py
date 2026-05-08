@@ -92,7 +92,7 @@ def _fetch_admin_id(conn, admin_user: str) -> int:
         """
         SELECT TOP 1 IdUsuario
         FROM Usuarios
-        WHERE Rol = 'admin' AND Username = ?
+        WHERE Rol = 'admin' AND NombreUsuario = ?
         ORDER BY IdUsuario ASC
         """,
         (admin_user,),
