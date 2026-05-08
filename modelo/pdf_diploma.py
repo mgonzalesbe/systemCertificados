@@ -137,6 +137,7 @@ def _draw_certificate_header(
     cx: float,
     logo_derecho_bytes: bytes | None,
     tipo_credencial: str,
+    institucion_nombre: str | None = None,
 ) -> float:
     """
     Logos superior izquierdo (regional, assets) y derecho (universidad, bytes): mismo tamaño máximo,
@@ -184,7 +185,7 @@ def _draw_certificate_header(
     title_block_drop = float(os.environ.get("CERT_PDF_TITLE_BLOCK_DROP_CM", "1.55")) * cm
     y = y_below_logos - 0.28 * cm - title_block_drop
 
-    inst = "HOSPITAL DISTRITAL DE LAREDO"
+    inst = ((institucion_nombre or "").strip() or "CENTRO EDUCATIVO").upper()
     titulo = ((tipo_credencial or "").strip() or "RECONOCIMIENTO").upper()
     c.setFillColor(colors.black)
     fs = FONT_HEADER_LINE_PT
@@ -217,6 +218,7 @@ def generar_pdf_diploma(
     doctor_nombres: str | None = None,
     doctor_genero: str | None = None,
     plantilla_fondo_bytes: bytes | None = None,
+    institucion_nombre: str | None = None,
 ):
     """
     Diploma horizontal: plantilla de página (env o PNG/JPG en assets), cabecera con logos,
@@ -241,7 +243,7 @@ def generar_pdf_diploma(
         _draw_background_cover(c, w, h, plantilla_ir)
 
     y = _draw_certificate_header(
-        c, w, h, margin_x, inner_w, cx, logo_derecho_bytes, tipo_credencial
+        c, w, h, margin_x, inner_w, cx, logo_derecho_bytes, tipo_credencial, institucion_nombre
     )
 
     c.setFillColor(colors.black)
@@ -308,7 +310,8 @@ def generar_pdf_diploma(
     c.setFont(FONT_SANS_BOLD, FONT_CARGO_SIZE)
     c.setFillColor(colors.black)
     cargo_baseline = line_y - 0.78 * cm
-    c.drawCentredString(cx, cargo_baseline, "DIRECTOR DEL HOSPITAL DISTRITAL DE LAREDO")
+    inst_cargo = ((institucion_nombre or "").strip() or "CENTRO EDUCATIVO").upper()
+    c.drawCentredString(cx, cargo_baseline, f"DIRECTOR DE {inst_cargo}")
 
     # --- QR centrado debajo del cargo (pequeño; no tapa esquinas del marco) ---
     qr = qrcode.QRCode(version=None, box_size=1, border=1)
@@ -347,6 +350,7 @@ def generar_pdf_diploma_bytes(
     doctor_nombres: str | None = None,
     doctor_genero: str | None = None,
     plantilla_fondo_bytes: bytes | None = None,
+    institucion_nombre: str | None = None,
 ) -> bytes:
     """Genera el PDF en memoria (para guardar en SQL Server VARBINARY).
 
@@ -367,5 +371,6 @@ def generar_pdf_diploma_bytes(
         doctor_nombres=doctor_nombres,
         doctor_genero=doctor_genero,
         plantilla_fondo_bytes=plantilla_fondo_bytes,
+        institucion_nombre=institucion_nombre,
     )
     return buf.getvalue()

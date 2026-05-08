@@ -84,6 +84,19 @@ def _load_or_create_private_key():
     return private_key
 
 
+def _slug_cert_prefix(nombre_centro: str | None) -> str:
+    base = re.sub(r"[^A-Za-z0-9 ]+", " ", str(nombre_centro or "").upper()).strip()
+    if not base:
+        return "CERT"
+    parts = [p for p in base.split() if p]
+    if len(parts) >= 2:
+        pref = "".join(p[0] for p in parts[:4])
+    else:
+        pref = parts[0][:4]
+    pref = re.sub(r"[^A-Z0-9]", "", pref)
+    return pref or "CERT"
+
+
 private_key = _load_or_create_private_key()
 public_key = private_key.public_key()
 
@@ -369,7 +382,7 @@ def _intentar_enviar_correo_certificado_asignado(
         url,
         remitente_preferido=remitente_preferido,
         pdf_bytes=pdf_bytes,
-        pdf_filename=f"Certificado_{cert_id.replace('UCV-', '')}.pdf",
+        pdf_filename=f"Certificado_{str(cert_id).split('-', 1)[-1]}.pdf",
     )
     if exito:
         print(f"DEBUG: Correo enviado exitosamente a {u['email']}")
@@ -407,6 +420,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
     doctor_firma_bytes = None
     doctor_nombres = None
     doctor_genero = None
+    centro_nombre = None
     conn = get_db_connection()
     if not conn:
         raise RuntimeError("No se pudo conectar a la base de datos para resolver catálogos")
@@ -437,6 +451,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
         cr = cursor.fetchone()
         if not cr:
             raise ValueError("Centro educativo no válido o inactivo")
+        centro_nombre = str(getattr(cr, "Nombre", "") or "").strip()
         raw_ld = getattr(cr, "LogoDerecho", None)
         if raw_ld is not None:
             logo_derecho_bytes = bytes(raw_ld) if not isinstance(raw_ld, (bytes, bytearray)) else bytes(raw_ld)
@@ -467,17 +482,37 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
     if not tipo_nombre:
         raise ValueError("Debe indicar el tipo de credencial")
 
-    texto_cuerpo_bd = (
-        expand_diploma_placeholders(body_text, curso_nombre, tipo_nombre)
-        if body_text
-        else None
-    )
+    if not body_text and id_texto_cuerpo_catalogo:
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    SELECT Texto FROM TextosCuerpoCertificado
+                    WHERE IdTextoCuerpo = ? AND Activo = 1
+                    """,
+                    (id_texto_cuerpo_catalogo,),
+                )
+                tr = cursor.fetchone()
+                if tr:
+                    body_text = str(getattr(tr, "Texto", "") or "").strip() or None
+            finally:
+                conn.close()
+
+    if not body_text:
+        body_text = (
+            "Por haber culminado satisfactoriamente el [[CURSO]], "
+            "se otorga la presente credencial en reconocimiento a su participacion."
+        )
+
+    texto_cuerpo_bd = expand_diploma_placeholders(body_text, curso_nombre, tipo_nombre)
 
     if id_tipo_credencial is None:
         # fallback: resolver por nombre si existen semillas
         id_tipo_credencial = obtener_id_tipo_credencial_por_nombre(tipo_nombre)
 
-    cert_id = f"UCV-{uuid.uuid4()}"
+    cert_id = f"{_slug_cert_prefix(centro_nombre)}-{uuid.uuid4()}"
     raw_data = signed_message(
         cert_id,
         datos_estudiante['name'],
@@ -504,6 +539,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
             doctor_firma_bytes=doctor_firma_bytes,
             doctor_nombres=doctor_nombres,
             doctor_genero=doctor_genero,
+            institucion_nombre=centro_nombre,
         )
     except Exception as e:
         pdf_error = str(e)

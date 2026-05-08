@@ -650,10 +650,7 @@ def admin_create_centro_educativo():
             return jsonify({"success": False, "error": "logo_derecho_base64 no es Base64 válido"}), 400
         if len(raw_d) > 5 * 1024 * 1024:
             return jsonify({"success": False, "error": "El logo derecho no puede superar 5 MB"}), 400
-        try:
-            logo_derecho_bin = strip_uniform_background_to_png(raw_d)
-        except Exception:
-            logo_derecho_bin = raw_d
+        logo_derecho_bin = raw_d
 
     conn = get_db_connection()
     if not conn:
