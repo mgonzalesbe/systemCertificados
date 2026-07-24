@@ -328,6 +328,27 @@ def _ensure_usuarios(cursor):
     _ensure_usuarios_index(cursor)
 
 
+def ensure_firma_doctores_schema():
+    """Asegura tabla/columna Cargo de FirmaDoctores (despliegues antiguos)."""
+    conn = get_db_connection()
+    if not conn:
+        return False
+    try:
+        cursor = conn.cursor()
+        _ensure_firma_doctores(cursor)
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"ensure_firma_doctores_schema: {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        conn.close()
+
+
 def ensure_usuarios_practica_columns():
     """
     Asegura columnas Universidad/Area (y demográficas) en Usuarios.
@@ -573,21 +594,24 @@ def _ensure_centro_educativo(cursor):
 
 
 def _ensure_firma_doctores(cursor):
-    if _table_exists(cursor, "FirmaDoctores"):
-        return
-    cursor.execute(
-        """
-        CREATE TABLE FirmaDoctores (
-            IdFirmaDoctores INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-            Firma VARBINARY(MAX) NULL,
-            Estado NVARCHAR(20) NOT NULL DEFAULT N'Activo',
-            Nombres NVARCHAR(200) NOT NULL,
-            Genero NVARCHAR(20) NOT NULL,
-            CONSTRAINT CK_FirmaDoctores_Estado CHECK (Estado IN (N'Activo', N'Inactivo')),
-            CONSTRAINT CK_FirmaDoctores_Genero CHECK (Genero IN (N'Masculino', N'Femenino'))
+    if not _table_exists(cursor, "FirmaDoctores"):
+        cursor.execute(
+            """
+            CREATE TABLE FirmaDoctores (
+                IdFirmaDoctores INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                Firma VARBINARY(MAX) NULL,
+                Estado NVARCHAR(20) NOT NULL DEFAULT N'Activo',
+                Nombres NVARCHAR(200) NOT NULL,
+                Genero NVARCHAR(20) NOT NULL,
+                Cargo NVARCHAR(200) NULL,
+                CONSTRAINT CK_FirmaDoctores_Estado CHECK (Estado IN (N'Activo', N'Inactivo')),
+                CONSTRAINT CK_FirmaDoctores_Genero CHECK (Genero IN (N'Masculino', N'Femenino'))
+            )
+            """
         )
-        """
-    )
+        return
+    if not _column_exists(cursor, "FirmaDoctores", "Cargo"):
+        cursor.execute("ALTER TABLE FirmaDoctores ADD Cargo NVARCHAR(200) NULL")
 
 
 def _seed_centro_educativo_default(cursor):

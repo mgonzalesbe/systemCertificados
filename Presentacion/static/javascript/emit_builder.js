@@ -1,13 +1,17 @@
 /**
- * Constructor visual de certificados (rompecabezas + vista previa).
- * Depende de helpers globales de admin.js: fetchOpts, fetchJson, ModalUtil,
- * searchStudents (si existe), coursesEmitList, loadCoursesIntoSelect, etc.
+ * Constructor visual sobre fondo_certificado.png
+ * Zonas clicables + modos alumnos / manual + firmas catálogo/manual.
  */
 (function () {
   const state = {
-    students: [], // {id, name, dni, universidad, area}
-    firmas: [], // {id, nombres, genero}
+    mode: "alumnos", // alumnos | manual
+    activeZone: null,
+    students: [],
+    manualName: "",
+    manualCargo: "",
+    firmas: [], // {id, nombres, genero, cargo, image?}
     doctorsCatalog: [],
+    imageCache: {},
   };
 
   const $ = (id) => document.getElementById(id);
@@ -18,16 +22,6 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-  }
-
-  function setPieceFilled(piece, filled, label) {
-    const art = document.querySelector(`.puzzle-piece[data-piece="${piece}"]`);
-    const status = $(`piece-status-${piece}`);
-    if (art) art.classList.toggle("is-filled", !!filled);
-    if (status) {
-      status.textContent = label || (filled ? "listo" : piece === "cuerpo" ? "opcional" : "vacío");
-      status.classList.toggle("ok", !!filled);
-    }
   }
 
   function selectedCourseName() {
@@ -43,6 +37,40 @@
       .replace(/\[\[TIPO\]\]/gi, tipo || "…");
   }
 
+  function setMode(mode) {
+    state.mode = mode === "manual" ? "manual" : "alumnos";
+    document.querySelectorAll(".emit-mode-btn").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.mode === state.mode);
+    });
+    $("editor-dest-alumnos")?.classList.toggle("hidden", state.mode !== "alumnos");
+    $("editor-dest-manual")?.classList.toggle("hidden", state.mode !== "manual");
+    refresh();
+  }
+
+  function openZone(zone) {
+    state.activeZone = zone;
+    document.querySelectorAll(".cert-zone").forEach((z) => {
+      z.classList.toggle("is-active", z.dataset.zone === zone);
+    });
+    $("cert-editor-empty")?.classList.add("hidden");
+    document.querySelectorAll(".cert-editor-block").forEach((b) => {
+      b.classList.toggle("hidden", b.dataset.editor !== zone);
+    });
+    // tipo editor also covers curso
+    if (zone === "tipo") {
+      // already shown
+    }
+  }
+
+  function destinatariosList() {
+    if (state.mode === "manual") {
+      const name = (state.manualName || $("builder-manual-name")?.value || "").trim();
+      if (!name) return [];
+      return [{ id: null, name, dni: "", universidad: "", area: state.manualCargo || "" }];
+    }
+    return state.students;
+  }
+
   function renderStudentsChips() {
     const wrap = $("builder-students-chips");
     const meta = $("builder-students-meta");
@@ -52,67 +80,63 @@
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "student-chip";
-      chip.title = "Quitar";
       chip.innerHTML = `<span>${escapeHtml(s.name || s.dni || "Alumno")}</span><b>×</b>`;
       chip.addEventListener("click", () => {
         state.students = state.students.filter((x) => x.id !== s.id);
-        refreshBuilder();
+        refresh();
       });
       wrap.appendChild(chip);
     });
-    const unis = [
-      ...new Set(
-        state.students
-          .map((s) => (s.universidad || "").trim())
-          .filter(Boolean),
-      ),
-    ];
-    const areas = [
-      ...new Set(
-        state.students.map((s) => (s.area || "").trim()).filter(Boolean),
-      ),
-    ];
-    if (meta) {
-      meta.textContent = `${state.students.length} alumno(s)${
-        unis.length ? ` · ${unis.join(", ")}` : " · sin universidad"
-      }${areas.length ? ` · ${areas.join(", ")}` : ""}`;
-    }
-    setPieceFilled(
-      "alumnos",
-      state.students.length > 0,
-      state.students.length ? `${state.students.length} listo` : "vacío",
-    );
+    if (meta) meta.textContent = `${state.students.length} alumno(s) seleccionados`;
   }
 
-  function renderFirmasList() {
+  async function ensureFirmaImage(id) {
+    if (!id) return null;
+    if (state.imageCache[id]) return state.imageCache[id];
+    try {
+      const r = await fetch(`/api/admin/firma-doctores/${id}/image`, fetchOpts);
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.image) {
+        state.imageCache[id] = data.image;
+        return data.image;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  async function renderFirmasList() {
     const list = $("builder-firmas-list");
     const hidden = $("input-firma-doctor-id");
     if (!list) return;
     list.innerHTML = "";
-    state.firmas.forEach((f, idx) => {
+    for (const f of state.firmas) {
       const row = document.createElement("div");
       row.className = "firma-chip";
       const pref =
         f.genero === "Masculino" ? "Dr. " : f.genero === "Femenino" ? "Dra. " : "";
-      row.innerHTML = `<span>${idx + 1}. ${escapeHtml(pref + (f.nombres || ""))}</span>
-        <button type="button" data-id="${f.id}" aria-label="Quitar firma">×</button>`;
+      row.innerHTML = `<div><b>${escapeHtml(pref + (f.nombres || ""))}</b>
+        <div class="text-[10px] font-medium text-teal-800/80">${escapeHtml(f.cargo || "")}</div></div>
+        <button type="button" aria-label="Quitar">×</button>`;
       row.querySelector("button").addEventListener("click", () => {
         state.firmas = state.firmas.filter((x) => x.id !== f.id);
-        refreshBuilder();
+        refresh();
       });
       list.appendChild(row);
-    });
+      if (f.id && !f.image) {
+        ensureFirmaImage(f.id).then((img) => {
+          if (img) {
+            f.image = img;
+            updatePreview();
+          }
+        });
+      }
+    }
     if (hidden) hidden.value = state.firmas[0] ? String(state.firmas[0].id) : "";
-    setPieceFilled(
-      "firmas",
-      state.firmas.length > 0,
-      state.firmas.length ? `${state.firmas.length} firma(s)` : "vacío",
-    );
-    // refresh picker options (hide already added)
+
     const picker = $("builder-firma-picker");
     if (picker) {
       const used = new Set(state.firmas.map((f) => String(f.id)));
-      picker.innerHTML = `<option value="">Elegir director…</option>`;
+      picker.innerHTML = `<option value="">Elegir…</option>`;
       state.doctorsCatalog
         .filter((d) => d.active !== false)
         .forEach((d) => {
@@ -126,33 +150,27 @@
   }
 
   function updatePreview() {
-    const n = state.students.length;
-    const first = state.students[0];
+    const dests = destinatariosList();
+    const first = dests[0];
     const nameEl = $("pv-nombre");
     const extraEl = $("pv-alumnos-extra");
-    const uniEl = $("pv-universidad");
     if (nameEl) {
       nameEl.textContent = first
         ? String(first.name || "").toUpperCase()
-        : "NOMBRE DEL ALUMNO";
+        : "NOMBRE DEL DESTINATARIO";
       nameEl.classList.toggle("is-placeholder", !first);
     }
     if (extraEl) {
-      if (n > 1) {
-        extraEl.textContent = `+ ${n - 1} alumno(s) más recibirán el mismo diploma`;
+      if (dests.length > 1) {
+        extraEl.textContent = `+ ${dests.length - 1} más (mismo diploma)`;
+        extraEl.classList.remove("hidden");
+      } else if (state.mode === "manual" && state.manualCargo) {
+        extraEl.textContent = state.manualCargo;
         extraEl.classList.remove("hidden");
       } else {
         extraEl.textContent = "";
         extraEl.classList.add("hidden");
       }
-    }
-    if (uniEl) {
-      const unis = [
-        ...new Set(
-          state.students.map((s) => (s.universidad || "").trim()).filter(Boolean),
-        ),
-      ];
-      uniEl.textContent = unis.length ? unis.join(" · ") : "";
     }
 
     const centroSel = $("input-centro-id");
@@ -162,24 +180,31 @@
     const pvInst = $("pv-institucion");
     const pvTipo = $("pv-tipo");
     if (pvInst) {
-      pvInst.textContent = (inst && centroSel.value ? inst : "CENTRO EDUCATIVO").toUpperCase();
+      pvInst.textContent = (
+        inst && centroSel.value ? inst : "HOSPITAL DISTRITAL DE LAREDO"
+      ).toUpperCase();
       pvInst.classList.toggle("is-placeholder", !centroSel?.value);
     }
     if (pvTipo) {
-      pvTipo.textContent = (tipo && tipoSel.value ? tipo : "TIPO DE CREDENCIAL").toUpperCase();
+      pvTipo.textContent = (
+        tipo && tipoSel.value ? tipo : "RECONOCIMIENTO"
+      ).toUpperCase();
       pvTipo.classList.toggle("is-placeholder", !tipoSel?.value);
     }
-    $("pv-logo-right")?.classList.toggle("filled", !!centroSel?.value);
 
     const curso = selectedCourseName();
     const bodyRaw = $("input-body")?.value?.trim() || "";
     const pvBody = $("pv-cuerpo");
     if (pvBody) {
       if (bodyRaw) {
-        pvBody.textContent = expandBody(bodyRaw, curso, tipo && tipoSel.value ? tipo : "");
+        pvBody.textContent = expandBody(
+          bodyRaw,
+          curso,
+          tipo && tipoSel.value ? tipo : "",
+        );
         pvBody.classList.remove("is-placeholder");
       } else {
-        pvBody.textContent = "El texto del cuerpo aparecerá aquí…";
+        pvBody.textContent = "Pulse para escribir el cuerpo del diploma…";
         pvBody.classList.add("is-placeholder");
       }
     }
@@ -198,31 +223,34 @@
       firmasWrap.innerHTML = "";
       const list = state.firmas.length
         ? state.firmas
-        : [{ nombres: "Firma", empty: true }];
+        : [{ empty: true }];
       list.forEach((f) => {
         const slot = document.createElement("div");
         slot.className = "cert-firma-slot" + (f.empty ? " empty" : "");
-        const pref =
-          f.genero === "Masculino"
-            ? "Dr. "
-            : f.genero === "Femenino"
-              ? "Dra. "
-              : "";
-        slot.innerHTML = `<div class="sig-line"></div><span>${escapeHtml(
-          f.empty ? "Firma" : pref + (f.nombres || ""),
-        )}</span>`;
+        if (f.empty) {
+          slot.innerHTML = "<span>Pulse para agregar firma</span>";
+        } else {
+          const pref =
+            f.genero === "Masculino"
+              ? "Dr. "
+              : f.genero === "Femenino"
+                ? "Dra. "
+                : "";
+          const img = f.image
+            ? `<img src="${f.image}" alt="Firma" class="cert-firma-img" />`
+            : `<div class="sig-line"></div>`;
+          slot.innerHTML = `${img}<span class="cert-firma-name">${escapeHtml(
+            pref + (f.nombres || ""),
+          )}</span><span class="cert-firma-cargo">${escapeHtml(
+            (f.cargo || "").toUpperCase(),
+          )}</span>`;
+        }
         firmasWrap.appendChild(slot);
       });
     }
 
-    setPieceFilled("curso", !!$("input-course-id")?.value);
-    setPieceFilled("tipo", !!$("input-type")?.value);
-    setPieceFilled("centro", !!$("input-centro-id")?.value);
-    setPieceFilled("fecha", !!$("input-date")?.value);
-    setPieceFilled("cuerpo", !!bodyRaw, bodyRaw ? "listo" : "opcional");
-
     const ready =
-      state.students.length > 0 &&
+      dests.length > 0 &&
       $("input-course-id")?.value &&
       $("input-type")?.value &&
       $("input-centro-id")?.value &&
@@ -230,38 +258,43 @@
       state.firmas.length > 0;
 
     const btn = $("btn-builder-generate");
-    const badge = $("builder-preview-badge");
     const hint = $("builder-generate-hint");
     const txt = $("text-create");
     if (btn) btn.disabled = !ready;
-    if (badge) {
-      badge.textContent = ready
-        ? n > 1
-          ? `Listo · ${n} PDFs`
-          : "Listo · 1 PDF"
-        : "Armando…";
-      badge.className =
-        "text-xs font-semibold px-2 py-1 rounded-full " +
-        (ready
-          ? "bg-emerald-100 text-emerald-900"
-          : "bg-amber-100 text-amber-900");
-    }
     if (txt) {
       txt.textContent =
-        n > 1
-          ? `Generar ${n} certificados`
+        dests.length > 1
+          ? `Generar ${dests.length} certificados`
           : "Generar certificado";
     }
     if (hint) {
       hint.textContent = ready
-        ? n > 1
-          ? `Se emitirá un PDF firmado por cada uno de los ${n} alumnos.`
-          : "Se emitirá un PDF firmado para el alumno seleccionado."
-        : "Complete las piezas obligatorias para habilitar la generación.";
+        ? dests.length > 1
+          ? `Se emitirá un PDF por cada uno de los ${dests.length} destinatarios.`
+          : "Listo para generar el PDF firmado."
+        : "Pulse las zonas del certificado para completar los datos.";
     }
+
+    // Mark zones filled
+    document.querySelectorAll(".cert-zone").forEach((z) => {
+      const zone = z.dataset.zone;
+      let filled = false;
+      if (zone === "destinatario") filled = dests.length > 0;
+      if (zone === "institucion") filled = !!$("input-centro-id")?.value;
+      if (zone === "tipo")
+        filled = !!$("input-type")?.value && !!$("input-course-id")?.value;
+      if (zone === "cuerpo") filled = !!bodyRaw;
+      if (zone === "fecha") filled = !!date;
+      if (zone === "firmas") filled = state.firmas.length > 0;
+      z.classList.toggle("is-filled", filled);
+    });
   }
 
-  function refreshBuilder() {
+  function refresh() {
+    if (state.mode === "manual") {
+      state.manualName = $("builder-manual-name")?.value || "";
+      state.manualCargo = $("builder-manual-cargo")?.value || "";
+    }
     renderStudentsChips();
     renderFirmasList();
     updatePreview();
@@ -277,7 +310,7 @@
       universidad: s.universidad || "",
       area: s.area || "",
     });
-    refreshBuilder();
+    refresh();
   }
 
   async function fetchStudents(q, universidad, area) {
@@ -291,6 +324,18 @@
     return data.students || [];
   }
 
+  function bindZones() {
+    document.querySelectorAll(".cert-zone").forEach((z) => {
+      z.addEventListener("click", () => openZone(z.dataset.zone));
+    });
+  }
+
+  function bindMode() {
+    document.querySelectorAll(".emit-mode-btn").forEach((b) => {
+      b.addEventListener("click", () => setMode(b.dataset.mode));
+    });
+  }
+
   function bindStudentSearch() {
     const input = $("builder-student-search");
     const dd = $("builder-student-dropdown");
@@ -300,7 +345,6 @@
       const q = input.value.trim();
       if (q.length < 1) {
         dd.classList.add("hidden");
-        dd.innerHTML = "";
         return;
       }
       try {
@@ -342,14 +386,12 @@
     document.addEventListener("click", (e) => {
       if (!dd.contains(e.target) && e.target !== input) dd.classList.add("hidden");
     });
-  }
 
-  function bindGroupLoad() {
     $("builder-btn-load-group")?.addEventListener("click", async () => {
       const uni = $("builder-filter-uni")?.value?.trim() || "";
       const area = $("builder-filter-area")?.value?.trim() || "";
       if (!uni && !area) {
-        alert("Indique universidad y/o área para cargar un grupo.");
+        alert("Indique universidad y/o área.");
         return;
       }
       try {
@@ -357,21 +399,21 @@
         students.forEach(addStudent);
         if (!students.length) alert("No hay alumnos con ese filtro.");
       } catch (err) {
-        alert(err.message || "Error al cargar grupo");
+        alert(err.message || "Error");
       }
     });
     $("builder-btn-clear-students")?.addEventListener("click", () => {
       state.students = [];
-      refreshBuilder();
+      refresh();
     });
   }
 
   function bindFirmas() {
-    $("builder-btn-add-firma")?.addEventListener("click", () => {
+    $("builder-btn-add-firma")?.addEventListener("click", async () => {
       const picker = $("builder-firma-picker");
-      if (!picker || !picker.value) return;
+      if (!picker?.value) return;
       if (state.firmas.length >= 4) {
-        alert("Máximo 4 firmas por certificado.");
+        alert("Máximo 4 firmas.");
         return;
       }
       const doc = state.doctorsCatalog.find(
@@ -379,45 +421,141 @@
       );
       if (!doc) return;
       if (state.firmas.some((f) => String(f.id) === String(doc.id))) return;
-      state.firmas.push({
+      const entry = {
         id: Number(doc.id),
         nombres: doc.nombres || "",
         genero: doc.genero || "",
-      });
-      refreshBuilder();
+        cargo: doc.cargo || "",
+        image: null,
+      };
+      state.firmas.push(entry);
+      refresh();
+      const img = await ensureFirmaImage(entry.id);
+      if (img) {
+        entry.image = img;
+        updatePreview();
+      }
+    });
+
+    $("builder-btn-save-firma")?.addEventListener("click", async () => {
+      const msg = $("new-firma-msg");
+      const nombres = $("new-firma-nombres")?.value?.trim() || "";
+      const genero = $("new-firma-genero")?.value || "Masculino";
+      const cargo = $("new-firma-cargo")?.value?.trim() || "";
+      const file = $("new-firma-file")?.files?.[0];
+      if (!nombres) {
+        if (msg) {
+          msg.className = "text-xs mt-2 text-red-600";
+          msg.textContent = "Ingrese el nombre.";
+          msg.classList.remove("hidden");
+        }
+        return;
+      }
+      if (state.firmas.length >= 4) {
+        alert("Máximo 4 firmas.");
+        return;
+      }
+      let firma_base64 = null;
+      let previewDataUrl = null;
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert("La imagen no puede superar 5 MB.");
+          return;
+        }
+        const buf = await file.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        bytes.forEach((b) => {
+          binary += String.fromCharCode(b);
+        });
+        firma_base64 = btoa(binary);
+        previewDataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result || ""));
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
+      }
+      try {
+        const r = await fetch("/api/admin/firma-doctores", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          ...fetchOpts,
+          body: JSON.stringify({
+            nombres,
+            genero,
+            cargo,
+            estado: "Activo",
+            firma_base64,
+          }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || "No se pudo guardar");
+        const entry = {
+          id: data.id,
+          nombres: data.nombres || nombres,
+          genero: data.genero || genero,
+          cargo: data.cargo || cargo,
+          image: previewDataUrl,
+        };
+        if (entry.id) state.imageCache[entry.id] = previewDataUrl;
+        state.doctorsCatalog.push({
+          id: entry.id,
+          nombres: entry.nombres,
+          genero: entry.genero,
+          cargo: entry.cargo,
+          active: true,
+          hasFirma: !!firma_base64,
+        });
+        state.firmas.push(entry);
+        if ($("new-firma-nombres")) $("new-firma-nombres").value = "";
+        if ($("new-firma-cargo")) $("new-firma-cargo").value = "";
+        if ($("new-firma-file")) $("new-firma-file").value = "";
+        if (msg) {
+          msg.className = "text-xs mt-2 text-emerald-700";
+          msg.textContent = "Firmante guardado y agregado al diploma.";
+          msg.classList.remove("hidden");
+        }
+        refresh();
+      } catch (err) {
+        if (msg) {
+          msg.className = "text-xs mt-2 text-red-600";
+          msg.textContent = err.message || "Error";
+          msg.classList.remove("hidden");
+        }
+      }
     });
   }
 
-  function bindPreviewWatchers() {
-    ["input-type", "input-centro-id", "input-date", "input-body", "select-body-preset"].forEach(
-      (id) => {
-        $(id)?.addEventListener("change", refreshBuilder);
-        $(id)?.addEventListener("input", refreshBuilder);
-      },
-    );
-    $("input-course-id")?.addEventListener("change", refreshBuilder);
-    // course search selection is handled in admin.js; observe attribute/value
+  function bindWatchers() {
+    [
+      "input-type",
+      "input-centro-id",
+      "input-date",
+      "input-body",
+      "builder-manual-name",
+      "builder-manual-cargo",
+    ].forEach((id) => {
+      $(id)?.addEventListener("change", refresh);
+      $(id)?.addEventListener("input", refresh);
+    });
     const courseId = $("input-course-id");
     if (courseId) {
-      const obs = new MutationObserver(refreshBuilder);
-      obs.observe(courseId, { attributes: true, attributeFilter: ["value"] });
-      // also poll lightly when typing selection changes value programmatically
       let last = courseId.value;
       setInterval(() => {
         if (courseId.value !== last) {
           last = courseId.value;
-          refreshBuilder();
+          refresh();
         }
-      }, 400);
+      }, 350);
     }
     $("select-body-preset")?.addEventListener("change", () => {
-      const sel = $("select-body-preset");
-      const id = sel?.value;
+      const id = $("select-body-preset")?.value;
       const map = window.__bodyPresetTextById || {};
       if (id && map[Number(id)] !== undefined && $("input-body")) {
         $("input-body").value = map[Number(id)];
       }
-      refreshBuilder();
+      refresh();
     });
   }
 
@@ -428,15 +566,23 @@
     const resDiv = $("result-create");
     if (!btn || btn.disabled) return;
 
+    const dests = destinatariosList();
     const courseId = $("input-course-id")?.value;
     const typeId = $("input-type")?.value;
     const date = $("input-date")?.value;
     const centroId = $("input-centro-id")?.value;
     const bodyTxt = $("input-body")?.value?.trim() || "";
     const presetSel = $("select-body-preset");
-    const firmaIds = state.firmas.map((f) => f.id);
+    const firmaIds = state.firmas.map((f) => f.id).filter(Boolean);
 
-    if (!state.students.length || !courseId || !typeId || !date || !centroId || !firmaIds.length) {
+    if (
+      !dests.length ||
+      !courseId ||
+      !typeId ||
+      !date ||
+      !centroId ||
+      !firmaIds.length
+    ) {
       return;
     }
 
@@ -460,13 +606,13 @@
     if (presetSel?.value) common.body_text_catalog_id = presetSel.value;
 
     try {
-      if (state.students.length === 1) {
-        const s = state.students[0];
+      if (state.mode === "manual" || dests.length === 1) {
+        const s = dests[0];
         const payload = {
           ...common,
           name: s.name,
-          recipient_user_id: s.id,
         };
+        if (s.id) payload.recipient_user_id = s.id;
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -485,16 +631,11 @@
             typeName: result.cert?.type || "",
             hasPdf: Boolean(result.cert?.hasPdf),
           });
-        } else if (resDiv) {
-          resDiv.classList.remove("hidden");
-          resDiv.className =
-            "mt-3 p-3 rounded-lg text-center text-sm font-medium bg-emerald-100 text-emerald-800";
-          resDiv.textContent = `Certificado generado: ${result.cert?.id || ""}`;
         }
       } else {
         const payload = {
           ...common,
-          student_ids: state.students.map((s) => s.id),
+          student_ids: dests.map((s) => s.id),
         };
         const r = await fetch("/api/generate-bulk", {
           method: "POST",
@@ -529,12 +670,12 @@
     } finally {
       spinner?.classList.add("hidden");
       txt?.classList.remove("hidden");
-      refreshBuilder();
+      refresh();
     }
   }
 
   window.EmitBuilder = {
-    refresh: refreshBuilder,
+    refresh,
     setDoctorsCatalog(rows) {
       state.doctorsCatalog = Array.isArray(rows) ? rows : [];
       renderFirmasList();
@@ -543,24 +684,22 @@
     reset() {
       state.students = [];
       state.firmas = [];
-      if ($("input-course-id")) $("input-course-id").value = "";
-      if ($("input-course-search")) $("input-course-search").value = "";
-      if ($("input-type")) $("input-type").value = "";
-      if ($("input-centro-id")) $("input-centro-id").value = "";
-      if ($("input-date")) $("input-date").value = "";
-      if ($("input-body")) $("input-body").value = "";
-      if ($("select-body-preset")) $("select-body-preset").value = "";
-      refreshBuilder();
+      state.manualName = "";
+      state.manualCargo = "";
+      refresh();
     },
   };
 
   document.addEventListener("DOMContentLoaded", () => {
-    if (!$("emit-pieces")) return;
+    if (!$("cert-canvas")) return;
+    bindZones();
+    bindMode();
     bindStudentSearch();
-    bindGroupLoad();
     bindFirmas();
-    bindPreviewWatchers();
+    bindWatchers();
     $("btn-builder-generate")?.addEventListener("click", generate);
-    refreshBuilder();
+    setMode("alumnos");
+    openZone("destinatario");
+    refresh();
   });
 })();

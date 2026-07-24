@@ -503,7 +503,8 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
         for fid in firma_ids:
             cursor.execute(
                 """
-                SELECT Firma, Nombres, Genero FROM FirmaDoctores
+                SELECT Firma, Nombres, Genero
+                FROM FirmaDoctores
                 WHERE IdFirmaDoctores = ? AND Estado = N'Activo'
                 """,
                 (fid,),
@@ -513,6 +514,17 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
                 raise ValueError(f"Firma de director no válida o inactiva (id={fid})")
             noms = str(dr.Nombres or "").strip()
             gen = str(dr.Genero or "").strip()
+            cargo = ""
+            try:
+                cursor.execute(
+                    "SELECT Cargo FROM FirmaDoctores WHERE IdFirmaDoctores = ?",
+                    (fid,),
+                )
+                crow = cursor.fetchone()
+                if crow:
+                    cargo = str(getattr(crow, "Cargo", None) or crow[0] or "").strip()
+            except Exception:
+                cargo = ""
             firma_b = None
             raw_f = getattr(dr, "Firma", None)
             if raw_f is not None:
@@ -523,6 +535,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
                 "firma_bytes": firma_b,
                 "nombres": noms,
                 "genero": gen,
+                "cargo": cargo,
             })
         if doctores_pdf:
             doctor_nombres = doctores_pdf[0]["nombres"]

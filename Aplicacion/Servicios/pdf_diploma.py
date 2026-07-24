@@ -373,7 +373,10 @@ def generar_pdf_diploma(
             c.drawCentredString(slot_cx, line_y - 0.4 * cm, firmante_line)
         c.setFont(FONT_SANS_BOLD, FONT_CARGO_SIZE)
         c.setFillColor(colors.black)
-        c.drawCentredString(slot_cx, cargo_baseline, f"DIRECTOR DE {inst_cargo}")
+        cargo_txt = (doc.get("cargo") or "").strip()
+        if not cargo_txt:
+            cargo_txt = f"DIRECTOR DE {inst_cargo}"
+        c.drawCentredString(slot_cx, cargo_baseline, cargo_txt.upper())
 
     # --- QR centrado debajo del cargo ---
     qr = qrcode.QRCode(version=None, box_size=1, border=1)

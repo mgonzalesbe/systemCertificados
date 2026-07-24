@@ -957,3 +957,240 @@ body.dark-theme .theme-toggle {
   background: #fff;
 }
 
+/* ==========================================================================
+   Diploma interactivo (fondo real + zonas clicables)
+   ========================================================================== */
+.emit-mode-btn {
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid #99f6e4;
+  background: #fff;
+  color: #0f766e;
+}
+.emit-mode-btn.is-active {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.28);
+}
+
+.cert-canvas-wrap {
+  border-radius: 1rem;
+  padding: 0.65rem;
+  background: linear-gradient(180deg, #ecfdf5, #f8fafc);
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+.cert-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.414 / 1;
+  background-color: #fff;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 0.35rem;
+  overflow: hidden;
+}
+.cert-zone {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  border: 1.5px dashed transparent;
+  border-radius: 0.45rem;
+  background: transparent;
+  padding: 0.25rem 0.4rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.cert-zone:hover,
+.cert-zone.is-active {
+  border-color: rgba(13, 148, 136, 0.65);
+  background: rgba(204, 251, 241, 0.28);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
+}
+.cert-zone.is-filled:not(.is-active) {
+  border-color: rgba(13, 148, 136, 0.18);
+}
+.cert-zone-label {
+  display: none;
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #0f766e;
+}
+.cert-zone.is-active .cert-zone-label,
+.cert-zone:hover .cert-zone-label {
+  display: block;
+}
+.cert-zone-value {
+  display: block;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
+}
+.cert-zone-value.is-placeholder,
+.cert-body-text.is-placeholder {
+  color: #94a3b8 !important;
+  font-weight: 600;
+}
+.cert-zone-sub {
+  display: block;
+  font-size: 0.65rem;
+  color: #0f766e;
+  font-weight: 700;
+  margin-top: 0.15rem;
+}
+.cert-zone-inst {
+  top: 18%;
+}
+.cert-zone-inst .cert-zone-value {
+  font-size: clamp(0.7rem, 1.7vw, 0.95rem);
+  text-transform: uppercase;
+}
+.cert-zone-tipo {
+  top: 24%;
+}
+.cert-zone-tipo .cert-zone-value {
+  font-size: clamp(0.85rem, 2vw, 1.15rem);
+  text-transform: uppercase;
+}
+.cert-otorgado {
+  position: absolute;
+  top: 32%;
+  left: 12%;
+  font-style: italic;
+  font-family: "Times New Roman", Times, serif;
+  font-size: clamp(0.7rem, 1.4vw, 0.9rem);
+  color: #1e293b;
+  pointer-events: none;
+}
+.cert-zone-nombre {
+  top: 36%;
+}
+.cert-zone-nombre .cert-zone-value {
+  font-size: clamp(0.9rem, 2.3vw, 1.35rem);
+  text-transform: uppercase;
+  color: #134e4a;
+}
+.cert-zone-cuerpo {
+  top: 46%;
+  min-height: 14%;
+}
+.cert-body-text {
+  font-style: italic;
+  font-family: "Times New Roman", Times, serif;
+  font-size: clamp(0.62rem, 1.35vw, 0.85rem);
+  font-weight: 500 !important;
+  line-height: 1.35;
+}
+.cert-zone-fecha {
+  top: 64%;
+  left: 28%;
+  right: 28%;
+}
+.cert-zone-fecha .cert-zone-value {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.cert-zone-firmas {
+  top: 70%;
+  bottom: 8%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.cert-firmas-row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+}
+.cert-firma-slot {
+  flex: 1;
+  max-width: 9rem;
+  text-align: center;
+}
+.cert-firma-slot.empty {
+  border: 1px dashed #94a3b8;
+  border-radius: 0.4rem;
+  padding: 0.55rem 0.35rem;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+.cert-firma-img {
+  max-height: 2.2rem;
+  max-width: 100%;
+  object-fit: contain;
+  margin: 0 auto 0.15rem;
+  display: block;
+}
+.cert-firma-slot .sig-line {
+  height: 1.5rem;
+  border-bottom: 1px solid #0f172a;
+  margin-bottom: 0.2rem;
+}
+.cert-firma-name {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #0f172a;
+}
+.cert-firma-cargo {
+  display: block;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: #334155;
+  line-height: 1.15;
+}
+.cert-preview-qr {
+  position: absolute;
+  bottom: 3.2%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.45rem;
+  height: 1.45rem;
+  border: 1px solid #64748b;
+  font-size: 0.5rem;
+  font-weight: 800;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.9);
+  pointer-events: none;
+}
+
+.cert-editor-panel {
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  border-radius: 1rem;
+  background: #fff;
+  padding: 1rem;
+  min-height: 22rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+}
+.cert-editor-title {
+  font-weight: 800;
+  color: #134e4a;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+.cert-editor-empty {
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+}
+.cert-editor-block.hidden {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  .cert-editor-panel {
+    min-height: auto;
+  }
+}

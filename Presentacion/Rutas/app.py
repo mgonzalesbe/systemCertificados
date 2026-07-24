@@ -27,7 +27,7 @@ from flask import (
 sys.path.insert(0, ruta_raiz)
 
 from Aplicacion.Servicios import certificado
-from Persistencia.database import init_db, get_db_connection, ensure_usuarios_practica_columns
+from Persistencia.database import init_db, get_db_connection, ensure_usuarios_practica_columns, ensure_firma_doctores_schema
 from Aplicacion.Servicios import auth_usuarios
 from Aplicacion.Servicios.image_transparency import strip_uniform_background_to_png
 from Aplicacion.Servicios.email_certificado import enviar_correo_credenciales_registro, correo_habilitado
@@ -812,25 +812,39 @@ def admin_update_centro_educativo_active(centro_id: int):
 @login_required_api
 @admin_required_api
 def admin_list_firma_doctores():
+    ensure_firma_doctores_schema()
     conn = get_db_connection()
     if not conn:
         return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
     try:
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT IdFirmaDoctores, Nombres, Genero, Estado,
-                   CASE WHEN Firma IS NOT NULL AND DATALENGTH(Firma) > 0 THEN 1 ELSE 0 END AS HasFirma
-            FROM FirmaDoctores
-            ORDER BY Nombres ASC
-            """
-        )
+        try:
+            cursor.execute(
+                """
+                SELECT IdFirmaDoctores, Nombres, Genero, Estado, Cargo,
+                       CASE WHEN Firma IS NOT NULL AND DATALENGTH(Firma) > 0 THEN 1 ELSE 0 END AS HasFirma
+                FROM FirmaDoctores
+                ORDER BY Nombres ASC
+                """
+            )
+            has_cargo = True
+        except Exception:
+            cursor.execute(
+                """
+                SELECT IdFirmaDoctores, Nombres, Genero, Estado,
+                       CASE WHEN Firma IS NOT NULL AND DATALENGTH(Firma) > 0 THEN 1 ELSE 0 END AS HasFirma
+                FROM FirmaDoctores
+                ORDER BY Nombres ASC
+                """
+            )
+            has_cargo = False
         rows = []
         for row in cursor.fetchall():
             rows.append({
                 "id": int(row.IdFirmaDoctores),
                 "nombres": row.Nombres,
                 "genero": row.Genero,
+                "cargo": ((getattr(row, "Cargo", None) or "") if has_cargo else "") or "",
                 "active": (row.Estado or "").strip().lower() == "activo",
                 "hasFirma": bool(getattr(row, "HasFirma", 0)),
             })
@@ -843,6 +857,8 @@ def admin_list_firma_doctores():
 @login_required_api
 @admin_required_api
 def admin_create_firma_doctor():
+    from Persistencia.database import ensure_firma_doctores_schema
+    ensure_firma_doctores_schema()
     datos = request.get_json(silent=True) or {}
     nombres = (datos.get("nombres") or "").strip()
     if not nombres:
@@ -855,6 +871,9 @@ def admin_create_firma_doctor():
     estado = (datos.get("estado") or "Activo").strip()
     if estado not in ("Activo", "Inactivo"):
         return jsonify({"success": False, "error": "Estado debe ser Activo o Inactivo"}), 400
+    cargo = (datos.get("cargo") or "").strip()
+    if len(cargo) > 200:
+        return jsonify({"success": False, "error": "El cargo no puede superar 200 caracteres"}), 400
     firma_bin = None
     b64 = datos.get("firma_base64")
     if b64:
@@ -876,16 +895,70 @@ def admin_create_firma_doctor():
         cursor = conn.cursor()
         cursor.execute(
             """
-            INSERT INTO FirmaDoctores (Firma, Estado, Nombres, Genero)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO FirmaDoctores (Firma, Estado, Nombres, Genero, Cargo)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (firma_bin, estado, nombres, genero),
+            (firma_bin, estado, nombres, genero, cargo or None),
         )
+        new_id = None
+        try:
+            cursor.execute("SELECT CAST(SCOPE_IDENTITY() AS INT)")
+            row = cursor.fetchone()
+            if row and row[0] is not None:
+                new_id = int(row[0])
+        except Exception:
+            new_id = None
         conn.commit()
-        return jsonify({"success": True})
+        return jsonify({
+            "success": True,
+            "id": new_id,
+            "nombres": nombres,
+            "genero": genero,
+            "cargo": cargo,
+            "hasFirma": bool(firma_bin),
+            "active": estado == "Activo",
+        })
     except Exception as e:
         conn.rollback()
         return jsonify({"success": False, "error": str(e)}), 400
+    finally:
+        conn.close()
+
+
+@app.route('/api/admin/firma-doctores/<int:doctor_id>/image', methods=['GET'])
+@login_required_api
+@admin_required_api
+def admin_firma_doctor_image(doctor_id: int):
+    """Devuelve la imagen de firma en data-URL para la vista previa del diploma."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT Firma FROM FirmaDoctores
+            WHERE IdFirmaDoctores = ? AND Estado = N'Activo'
+            """,
+            (doctor_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "No encontrado"}), 404
+        raw = getattr(row, "Firma", None)
+        if raw is None:
+            return jsonify({"success": True, "image": None})
+        blob = bytes(raw) if not isinstance(raw, (bytes, bytearray)) else bytes(raw)
+        if not blob:
+            return jsonify({"success": True, "image": None})
+        # Detectar mime simple
+        mime = "image/png"
+        if blob[:3] == b"\xff\xd8\xff":
+            mime = "image/jpeg"
+        elif blob[:6] in (b"GIF87a", b"GIF89a"):
+            mime = "image/gif"
+        b64 = base64.b64encode(blob).decode("ascii")
+        return jsonify({"success": True, "image": f"data:{mime};base64,{b64}"})
     finally:
         conn.close()
 
@@ -1140,6 +1213,10 @@ def _bootstrap_app():
         init_db()
     except Exception as exc:
         print(f"[bootstrap] init_db: {exc}")
+    try:
+        ensure_firma_doctores_schema()
+    except Exception as exc:
+        print(f"[bootstrap] firma schema: {exc}")
     try:
         auth_usuarios.asegurar_admin_por_defecto()
     except Exception as exc:
