@@ -1,5 +1,6 @@
 # Clave privada del emisor (generada en primer arranque)
 modelo/issuer_private_key.pem
+**/issuer_private_key.pem
 .env
 .venv/
 __pycache__/

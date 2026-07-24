@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mis certificados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body class="app-shell min-h-screen p-4 text-gray-800">
+    <div class="app-surface max-w-4xl mx-auto rounded-2xl p-6 md:p-8">
+      <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 class="text-2xl font-extrabold text-blue-900">Mis certificados</h1>
+          <p class="text-gray-600 text-sm">Área reservada para funciones futuras (descargas vinculadas a su cuenta).</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="/verificar" target="_blank" rel="noopener" class="text-sm text-blue-600 font-semibold hover:underline">Verificar un PDF (público)</a>
+          <span class="text-sm text-gray-600">{{ username }}</span>
+          <button type="button" id="btn-logout" class="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-semibold">Salir</button>
+        </div>
+      </header>
+
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Buscar por texto</label>
+        <input type="search" id="filter-certs" placeholder="Nombre, curso o ID…" class="w-full p-3 border border-gray-300 rounded-lg outline-none" />
+      </div>
+
+      <div id="empty-list" class="hidden p-8 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl">
+        No hay certificados asociados a su cuenta. La verificación de autenticidad del PDF está disponible en la página pública «Verificar certificado».
+      </div>
+
+      <ul id="cert-list" class="space-y-4"></ul>
+    </div>
+    <script src="{{ url_for('static', filename='javascript/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='javascript/alumno.js') }}"></script>
+  </body>
+</html>

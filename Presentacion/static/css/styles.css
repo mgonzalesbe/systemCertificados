@@ -1,0 +1,634 @@
+/* ==========================================================================
+   Importación de fuente principal (Inter) para darle aspecto más formal
+   ========================================================================== */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --brand-900: #134e4a;
+  --brand-700: #0f766e;
+  --brand-500: #0d9488;
+  --surface-soft: rgba(255, 255, 255, 0.88);
+  --surface-border: rgba(148, 163, 184, 0.24);
+  --ring-soft: rgba(13, 148, 136, 0.22);
+  --shadow-soft:
+    0 10px 30px rgba(2, 6, 23, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: #0f172a;
+  background:
+    radial-gradient(1200px 520px at -5% -10%, rgba(13, 148, 136, 0.16), transparent 65%),
+    radial-gradient(980px 460px at 110% -15%, rgba(2, 132, 199, 0.12), transparent 62%),
+    linear-gradient(180deg, #f0fdfa 0%, #f8fafc 55%, #f8fafc 100%);
+}
+
+body:not(.dark-theme) .app-surface {
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9)),
+    radial-gradient(500px 220px at 6% -8%, rgba(13, 148, 136, 0.08), transparent 72%);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow:
+    0 22px 44px rgba(15, 23, 42, 0.1),
+    0 6px 16px rgba(13, 148, 136, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+}
+
+body:not(.dark-theme) .app-surface > header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding-bottom: 1rem;
+  margin-bottom: 1.6rem !important;
+}
+
+body.dark-theme {
+  color: #e2e8f0;
+  background:
+    radial-gradient(1100px 500px at -10% -15%, rgba(59, 130, 246, 0.2), transparent 65%),
+    radial-gradient(960px 460px at 110% -10%, rgba(14, 165, 233, 0.16), transparent 60%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 55%, #111827 100%);
+}
+
+/* Un solo control para mostrar contraseña: oculta el icono nativo de Edge/IE */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+/* ==========================================================================
+   Base visual compartida
+   ========================================================================== */
+.app-shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+.app-shell::before,
+.app-shell::after {
+  content: "";
+  position: fixed;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(20px);
+}
+
+.app-shell::before {
+  width: 360px;
+  height: 360px;
+  left: -110px;
+  top: -130px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.2), transparent 68%);
+}
+
+.app-shell::after {
+  width: 320px;
+  height: 320px;
+  right: -120px;
+  bottom: -150px;
+  background: radial-gradient(circle, rgba(2, 132, 199, 0.16), transparent 68%);
+}
+
+.auth-brand-logo {
+  display: block;
+  width: min(100%, 240px);
+  max-height: 140px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 22px rgba(4, 47, 46, 0.18));
+}
+
+@media (min-width: 768px) {
+  .auth-brand-logo {
+    width: min(100%, 280px);
+    max-height: 160px;
+  }
+}
+
+.app-surface {
+  background: var(--surface-soft);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  z-index: 1;
+}
+
+body.dark-theme .app-surface {
+  background: rgba(15, 23, 42, 0.78);
+  border-color: rgba(100, 116, 139, 0.35);
+  box-shadow:
+    0 18px 42px rgba(2, 6, 23, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+}
+
+body:not(.dark-theme) h1 {
+  color: #0b2a66 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+body:not(.dark-theme) h2 {
+  color: #0f2f74 !important;
+}
+
+a {
+  transition: color 0.18s ease;
+}
+
+button,
+input,
+select,
+textarea {
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  border-color: #cbd5e1 !important;
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  border-radius: 0.85rem !important;
+}
+
+body:not(.dark-theme) input:not([type="checkbox"]):not([type="radio"]),
+body:not(.dark-theme) select,
+body:not(.dark-theme) textarea {
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border-color: rgba(148, 163, 184, 0.45) !important;
+}
+
+body.dark-theme input:not([type="checkbox"]):not([type="radio"]),
+body.dark-theme select,
+body.dark-theme textarea {
+  background-color: rgba(15, 23, 42, 0.92);
+  border-color: rgba(100, 116, 139, 0.55) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme input::placeholder,
+body.dark-theme textarea::placeholder {
+  color: #94a3b8;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: none;
+  border-color: #60a5fa !important;
+  box-shadow:
+    0 0 0 4px var(--ring-soft),
+    0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+/* ==========================================================================
+   Dashboard/Admin refinements
+   ========================================================================== */
+#main-nav {
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 0.55rem;
+  border-radius: 0.9rem;
+}
+
+body:not(.dark-theme) #main-nav {
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.82), rgba(226, 232, 240, 0.7));
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.08) inset;
+  border-radius: 1rem;
+}
+
+#main-nav .nav-btn {
+  border-radius: 0.7rem;
+}
+
+.nav-btn.bg-gray-200 {
+  background: rgba(226, 232, 240, 0.65) !important;
+}
+
+body:not(.dark-theme) .nav-btn.bg-gray-200 {
+  background: rgba(226, 232, 240, 0.96) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #334155 !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.nav-btn.bg-blue-600 {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow:
+    0 8px 16px rgba(37, 99, 235, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+body:not(.dark-theme) .nav-btn.bg-blue-600 {
+  box-shadow:
+    0 14px 24px rgba(37, 99, 235, 0.34),
+    0 4px 10px rgba(30, 64, 175, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+#interfaces-container .interface {
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  background: rgba(248, 250, 252, 0.62) !important;
+}
+
+body:not(.dark-theme) #interfaces-container .interface {
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.93), rgba(248, 250, 252, 0.88)) !important;
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+#dashboard .dashboard-chart-card,
+#dashboard #card-generated,
+#dashboard #card-verifications {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+body:not(.dark-theme) #dashboard .dashboard-chart-card,
+body:not(.dark-theme) #dashboard #card-generated,
+body:not(.dark-theme) #dashboard #card-verifications {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)) !important;
+}
+
+#dashboard .dashboard-chart-card:hover {
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.14);
+  transform: translateY(-2px);
+}
+
+body:not(.dark-theme) #dashboard .dashboard-chart-card:hover {
+  box-shadow:
+    0 18px 36px rgba(37, 99, 235, 0.2),
+    0 4px 12px rgba(2, 6, 23, 0.08);
+}
+
+#manage table,
+#catalogs table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body:not(.dark-theme) #manage .overflow-x-auto,
+body:not(.dark-theme) #catalogs .overflow-x-auto {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 14px 28px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  padding: 0.35rem;
+}
+
+#manage thead,
+#catalogs thead {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9) !important;
+}
+
+body:not(.dark-theme) #manage thead th,
+body:not(.dark-theme) #catalogs thead th {
+  color: #334155 !important;
+  letter-spacing: 0.05em;
+}
+
+#manage tbody tr:hover,
+#catalogs tbody tr:hover {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+body:not(.dark-theme) #manage tbody tr:nth-child(even),
+body:not(.dark-theme) #catalogs tbody tr:nth-child(even) {
+  background: rgba(248, 250, 252, 0.7);
+}
+
+body:not(.dark-theme) #manage tbody tr:hover,
+body:not(.dark-theme) #catalogs tbody tr:hover {
+  background: linear-gradient(90deg, rgba(219, 234, 254, 0.55), rgba(224, 242, 254, 0.3));
+}
+
+body:not(.dark-theme) #manage td,
+body:not(.dark-theme) #catalogs td {
+  color: #1e293b;
+}
+
+body:not(.dark-theme) .bg-blue-600 {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+}
+
+body:not(.dark-theme) .bg-emerald-600 {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+}
+
+body:not(.dark-theme) .bg-gray-800 {
+  background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+}
+
+body:not(.dark-theme) .rounded-lg {
+  border-radius: 0.8rem !important;
+}
+
+body:not(.dark-theme) .rounded-xl {
+  border-radius: 1rem !important;
+}
+
+body:not(.dark-theme) #cert-pagination button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: linear-gradient(180deg, #ffffff, #f1f5f9) !important;
+  color: #334155;
+  border-radius: 0.7rem;
+  min-width: 2.2rem;
+}
+
+body:not(.dark-theme) #cert-pagination button.bg-blue-600 {
+  color: #fff !important;
+  border-color: rgba(30, 64, 175, 0.45);
+}
+
+body:not(.dark-theme) #table-body-certs a {
+  color: #1d4ed8 !important;
+  text-underline-offset: 3px;
+}
+
+body:not(.dark-theme) #table-body-certs a:hover {
+  color: #1e40af !important;
+}
+
+body:not(.dark-theme) #table-body-certs .bg-emerald-100 {
+  background: linear-gradient(180deg, #dcfce7, #bbf7d0) !important;
+  border: 1px solid rgba(22, 163, 74, 0.24);
+}
+
+body:not(.dark-theme) #table-body-certs .bg-rose-100 {
+  background: linear-gradient(180deg, #ffe4e6, #fecdd3) !important;
+  border: 1px solid rgba(244, 63, 94, 0.24);
+}
+
+body:not(.dark-theme) #table-body-certs .text-rose-600,
+body:not(.dark-theme) #table-body-certs .text-emerald-600 {
+  font-weight: 700;
+}
+
+body:not(.dark-theme) .shadow-sm,
+body:not(.dark-theme) .shadow-md,
+body:not(.dark-theme) .shadow-lg,
+body:not(.dark-theme) .shadow-xl {
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(59, 130, 246, 0.06) !important;
+}
+
+#db-unavailable-banner {
+  border-color: #f59e0b !important;
+  background: linear-gradient(180deg, rgba(254, 243, 199, 0.7), rgba(255, 251, 235, 0.84));
+}
+
+body.dark-theme #main-nav {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(100, 116, 139, 0.35);
+}
+
+body.dark-theme .app-shell::before {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.18), transparent 70%);
+}
+
+body.dark-theme .app-shell::after {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.14), transparent 70%);
+}
+
+body.dark-theme #interfaces-container .interface {
+  background: rgba(15, 23, 42, 0.45) !important;
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+body.dark-theme #manage input,
+body.dark-theme #manage select,
+body.dark-theme #catalogs input,
+body.dark-theme #catalogs select,
+body.dark-theme #catalogs textarea,
+body.dark-theme #create input,
+body.dark-theme #create select,
+body.dark-theme #create textarea {
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(100, 116, 139, 0.5) !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme #dashboard .dashboard-chart-card,
+body.dark-theme #dashboard #card-generated,
+body.dark-theme #dashboard #card-verifications,
+body.dark-theme .bg-white,
+body.dark-theme .bg-gray-50 {
+  background: rgba(15, 23, 42, 0.88) !important;
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+body.dark-theme .text-gray-800,
+body.dark-theme .text-gray-700 {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .text-gray-900 {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .text-gray-600,
+body.dark-theme .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .text-gray-400 {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .border-gray-100,
+body.dark-theme .border-gray-200,
+body.dark-theme .border-gray-300 {
+  border-color: rgba(100, 116, 139, 0.4) !important;
+}
+
+body.dark-theme .bg-gray-100,
+body.dark-theme .bg-gray-200 {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+body.dark-theme .text-blue-600 {
+  color: #93c5fd !important;
+}
+
+body.dark-theme .text-purple-600 {
+  color: #c4b5fd !important;
+}
+
+body.dark-theme .text-emerald-600 {
+  color: #6ee7b7 !important;
+}
+
+body.dark-theme .text-rose-600 {
+  color: #fda4af !important;
+}
+
+body.dark-theme .underline {
+  text-decoration-color: rgba(147, 197, 253, 0.65);
+}
+
+body.dark-theme #manage thead,
+body.dark-theme #catalogs thead {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)) !important;
+}
+
+body.dark-theme #manage tbody tr:hover,
+body.dark-theme #catalogs tbody tr:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+body.dark-theme #db-unavailable-banner {
+  background: linear-gradient(180deg, rgba(146, 64, 14, 0.25), rgba(120, 53, 15, 0.2));
+  border-color: rgba(251, 191, 36, 0.6) !important;
+}
+
+body.dark-theme .custom-modal-content {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(100, 116, 139, 0.45);
+  color: #e2e8f0;
+}
+
+.theme-toggle {
+  position: fixed;
+  right: 1rem;
+  top: 1rem;
+  z-index: 80;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: rgba(255, 255, 255, 0.86);
+  color: #0f172a;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.13);
+  backdrop-filter: blur(8px);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+}
+
+body.dark-theme .theme-toggle {
+  background: rgba(15, 23, 42, 0.88);
+  color: #e2e8f0;
+  border-color: rgba(100, 116, 139, 0.45);
+}
+
+/* ==========================================================================
+   1. COMPORTAMIENTO DE LAS VISTAS (PESTAÑAS/INTERFACES)
+   ========================================================================== */
+/* Oculta todas las interfaces por defecto */
+.interface {
+  display: none;
+}
+
+/* Muestra solo la interfaz activa y le da una animación de entrada fluida */
+.interface.active {
+  display: block;
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+/* Animación de entrada (deslizar ligeramente hacia arriba y aparecer) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   2. EFECTOS DE CARGA (SPINNER) PARA LA TESIS (TGC)
+   ========================================================================== */
+.loading-spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid #ffffff;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   3. VENTANAS MODALES (ALERTAS Y CONFIRMACIONES PERSONALIZADAS)
+   ========================================================================== */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Fondo oscuro semitransparente */
+  backdrop-filter: blur(4px); /* Efecto borroso elegante */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50; /* Siempre encima de todo */
+}
+
+.custom-modal-content {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 28rem;
+  width: 90%;
+  box-shadow:
+    0 24px 48px -10px rgba(15, 23, 42, 0.24),
+    0 10px 14px -6px rgba(15, 23, 42, 0.1);
+  text-align: center;
+}
+
+/* ==========================================================================
+   4. ESTILOS DE LA LIBRERÍA DEL CÓDIGO QR
+   ========================================================================== */
+.qr-container img {
+  margin: 0 auto;
+  border: 4px solid white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}

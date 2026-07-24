@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Acceso — Certificados UCV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body class="app-shell min-h-screen flex items-center justify-center p-4">
+    <div class="app-surface p-8 rounded-2xl w-full max-w-md">
+      <div class="auth-brand text-center mb-4">
+        <img
+          src="{{ url_for('static', filename='imagenes/hospital/hospital-logo.jpeg') }}"
+          alt="Logo Hospital Distrital Laredo"
+          class="auth-brand-logo mx-auto mb-3"
+          onerror="this.style.display='none'"
+        />
+        <h1 class="text-2xl font-extrabold text-teal-900 text-center mb-1">
+          Certificados hospitalarios
+        </h1>
+        <p class="text-sm text-gray-500 text-center mb-4">
+          Hospital Distrital Laredo — prácticas y constancias
+        </p>
+      </div>
+      <p class="text-center mb-6">
+        <a
+          href="/verificar"
+          class="text-sm font-semibold text-teal-700 hover:underline"
+          >Verificar un certificado (PDF) sin iniciar sesión →</a
+        >
+      </p>
+
+      <div
+        id="msg-global"
+        class="hidden mb-4 p-3 rounded-lg text-sm font-medium text-center"
+      ></div>
+
+      <div class="flex gap-2 mb-6 rounded-lg bg-gray-100 p-1">
+        <button
+          type="button"
+          id="tab-login"
+          class="flex-1 py-2 rounded-md font-semibold bg-white text-blue-800 shadow-sm"
+        >
+          Entrar
+        </button>
+        <button
+          type="button"
+          id="tab-register"
+          class="flex-1 py-2 rounded-md font-semibold text-gray-600 hover:text-gray-800"
+        >
+          Registro alumno
+        </button>
+      </div>
+
+      <form id="form-login" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Usuario, correo o DNI</label
+          >
+          <input
+            id="login-user"
+            type="text"
+            required
+            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Contraseña</label
+          >
+          <div class="relative">
+            <input
+              id="login-pass"
+              type="password"
+              required
+              class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+            <button
+              type="button"
+              id="toggle-login-pass"
+              class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+              aria-label="Mostrar contraseña"
+            >
+              👁
+            </button>
+          </div>
+        </div>
+        <button
+          type="submit"
+          class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors"
+        >
+          Ingresar
+        </button>
+      </form>
+
+      <form id="form-register" class="space-y-4 hidden">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Usuario</label
+          >
+          <input
+            id="reg-user"
+            type="text"
+            required
+            minlength="3"
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+          <p id="reg-user-error" class="hidden mt-1 text-xs text-red-600 font-medium"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >DNI o documento de identidad</label
+          >
+          <input
+            id="reg-doc"
+            type="text"
+            required
+            minlength="8"
+            maxlength="8"
+            pattern="[0-9]{8}"
+            autocomplete="off"
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="8 dígitos numéricos"
+          />
+          <p id="reg-doc-error" class="hidden mt-1 text-xs text-red-600 font-medium"></p>
+          <p class="text-xs text-gray-500 mt-1">
+            Un mismo documento no puede registrarse dos veces (evita cuentas
+            duplicadas).
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Nombres</label
+          >
+          <input
+            id="reg-nombres"
+            type="text"
+            required
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            placeholder="Ej. Juan Carlos"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Apellidos</label
+          >
+          <input
+            id="reg-apellidos"
+            type="text"
+            required
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+            placeholder="Ej. Pérez García"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Universidad</label
+          >
+          <input
+            id="reg-universidad"
+            type="text"
+            required
+            maxlength="200"
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+            placeholder="Ej. Universidad César Vallejo"
+          />
+          <p id="reg-universidad-error" class="hidden mt-1 text-xs text-red-600 font-medium"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Área de prácticas</label
+          >
+          <input
+            id="reg-area"
+            type="text"
+            required
+            maxlength="150"
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+            placeholder="Ej. Enfermería, Admisión, Laboratorio..."
+          />
+          <p id="reg-area-error" class="hidden mt-1 text-xs text-red-600 font-medium"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Correo</label
+          >
+          <input
+            id="reg-email"
+            type="email"
+            required
+            class="reg-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+          <p id="reg-email-error" class="hidden mt-1 text-xs text-red-600 font-medium"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1"
+            >Contraseña</label
+          >
+          <div class="relative">
+            <input
+              id="reg-pass"
+              type="password"
+              required
+              minlength="6"
+              class="reg-field w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+            <button
+              type="button"
+              id="toggle-reg-pass"
+              class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+              aria-label="Mostrar contraseña"
+            >
+              👁
+            </button>
+          </div>
+          <p id="reg-pass-error" class="hidden mt-1 text-xs text-red-600 font-medium"></p>
+        </div>
+        <p class="text-xs text-gray-500">
+          Los administradores los crea otro administrador desde el panel.
+        </p>
+        <button
+          type="submit"
+          class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition-colors"
+        >
+          Crear cuenta
+        </button>
+      </form>
+    </div>
+    <script src="{{ url_for('static', filename='javascript/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='javascript/login.js') }}"></script>
+  </body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verificar certificado (PDF)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body class="app-shell min-h-screen flex items-center justify-center p-4">
+    <div class="app-surface rounded-2xl p-8 w-full max-w-lg">
+      <p class="text-center mb-2">
+        <a href="/" class="text-sm text-blue-600 hover:underline">← Volver al inicio de sesión</a>
+      </p>
+      <h1 class="text-2xl font-extrabold text-slate-800 text-center mb-2">Verificación de autenticidad</h1>
+      <p class="text-sm text-slate-600 text-center mb-6">
+        Suba el archivo PDF del certificado. No necesita iniciar sesión: el sistema lee el código QR y comprueba la firma digital frente al registro oficial. Si el PDF tiene texto seleccionable, también se verifica que el nombre y el programa impreso coincidan con ese registro (los cursos con nombre muy corto en catálogo se omiten en esa comprobación; no aplica en PDF solo imagen escaneada).
+      </p>
+
+      <input
+        type="file"
+        id="input-pdf-verify"
+        accept="application/pdf,.pdf"
+        class="block w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 mb-4"
+      />
+      <button
+        type="button"
+        id="btn-verify-pdf"
+        class="w-full bg-slate-800 text-white py-3 rounded-lg font-bold hover:bg-slate-900 transition-colors"
+      >
+        Verificar PDF
+      </button>
+
+      <div id="result-verify" class="mt-6 p-4 rounded-lg text-center text-sm font-medium hidden min-h-[3rem]"></div>
+    </div>
+    <script src="{{ url_for('static', filename='javascript/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='javascript/verificar_publico.js') }}"></script>
+  </body>
+</html>
