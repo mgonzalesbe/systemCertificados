@@ -283,30 +283,69 @@ def validar_datos_generacion(datos):
     finally:
         conn.close()
 
-    if datos.get("firma_doctor_id") in (None, ""):
-        raise ValueError("Debe indicar la firma del director (firma_doctor_id)")
-    try:
-        id_fd = int(datos.get("firma_doctor_id"))
-        if id_fd < 1:
-            raise ValueError()
-    except Exception:
-        raise ValueError("«firma_doctor_id» debe ser un entero positivo") from None
+    # Firmas: una (firma_doctor_id) o varias (firma_doctor_ids)
+    raw_ids = datos.get("firma_doctor_ids")
+    firma_ids = []
+    if isinstance(raw_ids, list) and raw_ids:
+        for x in raw_ids:
+            try:
+                fid = int(x)
+                if fid < 1:
+                    raise ValueError()
+                if fid not in firma_ids:
+                    firma_ids.append(fid)
+            except Exception:
+                raise ValueError("«firma_doctor_ids» debe ser una lista de enteros positivos") from None
+    elif datos.get("firma_doctor_id") not in (None, ""):
+        try:
+            fid = int(datos.get("firma_doctor_id"))
+            if fid < 1:
+                raise ValueError()
+            firma_ids = [fid]
+        except Exception:
+            raise ValueError("«firma_doctor_id» debe ser un entero positivo") from None
+    else:
+        raise ValueError("Debe indicar al menos una firma de director (firma_doctor_id o firma_doctor_ids)")
+
+    if len(firma_ids) > 4:
+        raise ValueError("Puede incluir como máximo 4 firmas de directores")
+
     conn = get_db_connection()
     if not conn:
         raise RuntimeError("Base de datos no disponible")
     try:
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT 1 FROM FirmaDoctores
-            WHERE IdFirmaDoctores = ? AND Estado = N'Activo'
-            """,
-            (id_fd,),
-        )
-        if cursor.fetchone() is None:
-            raise ValueError("Firma de director no válida o inactiva")
+        for fid in firma_ids:
+            cursor.execute(
+                """
+                SELECT 1 FROM FirmaDoctores
+                WHERE IdFirmaDoctores = ? AND Estado = N'Activo'
+                """,
+                (fid,),
+            )
+            if cursor.fetchone() is None:
+                raise ValueError(f"Firma de director no válida o inactiva (id={fid})")
     finally:
         conn.close()
+    # Normaliza para consumidores posteriores
+    datos["firma_doctor_id"] = firma_ids[0]
+    datos["firma_doctor_ids"] = firma_ids
+
+
+def _parse_firma_doctor_ids(datos):
+    raw_ids = datos.get("firma_doctor_ids")
+    ids = []
+    if isinstance(raw_ids, list) and raw_ids:
+        for x in raw_ids:
+            try:
+                fid = int(x)
+                if fid >= 1 and fid not in ids:
+                    ids.append(fid)
+            except (TypeError, ValueError):
+                continue
+    if not ids and datos.get("firma_doctor_id") not in (None, ""):
+        ids = [int(datos["firma_doctor_id"])]
+    return ids
 
 
 stats_tesis = {
@@ -411,7 +450,10 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
     id_curso = int(datos_estudiante["course_id"]) if datos_estudiante.get("course_id") not in (None, "") else None
     id_tipo_credencial = int(datos_estudiante["type_id"]) if datos_estudiante.get("type_id") not in (None, "") else None
     id_centro_educativo = int(datos_estudiante["centro_educativo_id"])
-    id_firma_doctores = int(datos_estudiante["firma_doctor_id"])
+    firma_ids = _parse_firma_doctor_ids(datos_estudiante)
+    if not firma_ids:
+        raise ValueError("Debe indicar al menos una firma de director")
+    id_firma_doctores = firma_ids[0]
 
     # Resolver nombres finales (para PDF/firma) desde BD si hay IDs
     curso_nombre = (datos_estudiante.get("course") or "").strip() or None
@@ -420,6 +462,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
     doctor_firma_bytes = None
     doctor_nombres = None
     doctor_genero = None
+    doctores_pdf = []
     centro_nombre = None
     conn = get_db_connection()
     if not conn:
@@ -457,23 +500,34 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
             logo_derecho_bytes = bytes(raw_ld) if not isinstance(raw_ld, (bytes, bytearray)) else bytes(raw_ld)
             if len(logo_derecho_bytes) == 0:
                 logo_derecho_bytes = None
-        cursor.execute(
-            """
-            SELECT Firma, Nombres, Genero FROM FirmaDoctores
-            WHERE IdFirmaDoctores = ? AND Estado = N'Activo'
-            """,
-            (id_firma_doctores,),
-        )
-        dr = cursor.fetchone()
-        if not dr:
-            raise ValueError("Firma de director no válida o inactiva")
-        doctor_nombres = str(dr.Nombres or "").strip()
-        doctor_genero = str(dr.Genero or "").strip()
-        raw_f = getattr(dr, "Firma", None)
-        if raw_f is not None:
-            doctor_firma_bytes = bytes(raw_f) if not isinstance(raw_f, (bytes, bytearray)) else bytes(raw_f)
-            if len(doctor_firma_bytes) == 0:
-                doctor_firma_bytes = None
+        for fid in firma_ids:
+            cursor.execute(
+                """
+                SELECT Firma, Nombres, Genero FROM FirmaDoctores
+                WHERE IdFirmaDoctores = ? AND Estado = N'Activo'
+                """,
+                (fid,),
+            )
+            dr = cursor.fetchone()
+            if not dr:
+                raise ValueError(f"Firma de director no válida o inactiva (id={fid})")
+            noms = str(dr.Nombres or "").strip()
+            gen = str(dr.Genero or "").strip()
+            firma_b = None
+            raw_f = getattr(dr, "Firma", None)
+            if raw_f is not None:
+                firma_b = bytes(raw_f) if not isinstance(raw_f, (bytes, bytearray)) else bytes(raw_f)
+                if len(firma_b) == 0:
+                    firma_b = None
+            doctores_pdf.append({
+                "firma_bytes": firma_b,
+                "nombres": noms,
+                "genero": gen,
+            })
+        if doctores_pdf:
+            doctor_nombres = doctores_pdf[0]["nombres"]
+            doctor_genero = doctores_pdf[0]["genero"]
+            doctor_firma_bytes = doctores_pdf[0]["firma_bytes"]
     finally:
         conn.close()
 
@@ -540,6 +594,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
             doctor_nombres=doctor_nombres,
             doctor_genero=doctor_genero,
             institucion_nombre=centro_nombre,
+            doctores=doctores_pdf,
         )
     except Exception as e:
         pdf_error = str(e)

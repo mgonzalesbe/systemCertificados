@@ -285,6 +285,7 @@ def generate_certificates_bulk():
         'type_id': datos.get('type_id'),
         'centro_educativo_id': datos.get('centro_educativo_id'),
         'firma_doctor_id': datos.get('firma_doctor_id'),
+        'firma_doctor_ids': datos.get('firma_doctor_ids'),
         'body_text': datos.get('body_text'),
         'body_text_catalog_id': datos.get('body_text_catalog_id'),
     }

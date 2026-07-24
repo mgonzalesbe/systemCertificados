@@ -251,13 +251,13 @@ def generar_pdf_diploma(
     doctor_genero: str | None = None,
     plantilla_fondo_bytes: bytes | None = None,
     institucion_nombre: str | None = None,
+    doctores: list | None = None,
 ):
     """
     Diploma horizontal: plantilla de página (env o PNG/JPG en assets), cabecera con logos,
-    títulos, cuerpo opcional, firma y QR. Sin plantilla solo se deja el fondo blanco (el marco va en la imagen).
-    El logo izquierdo es el archivo estático regional (assets).
-    Si ``texto_cuerpo`` está vacío, no se dibuja párrafo de cuerpo (el redactor define el inicio al escribir).
-    En el cuerpo se expanden ``[[CURSO]]`` y ``[[TIPO]]`` con los valores de ``curso`` y ``tipo_credencial``.
+    títulos, cuerpo opcional, una o varias firmas y QR.
+    ``doctores`` es una lista opcional de dicts ``{firma_bytes, nombres, genero}``.
+    Si no se envía, se usa el firmante único (compatibilidad).
     """
     w, h = landscape(A4)
     c = canvas.Canvas(dest, pagesize=(w, h))
@@ -305,47 +305,77 @@ def generar_pdf_diploma(
         y = _wrap_centered_lines(c, body, cx, y, inner_w, FONT_SERIF_ITALIC, body_size, leading)
         y -= 0.48 * cm
 
-    # --- Firma central (imagen + Dr./Dra. + cargo fijo) ---
-    # Un poco más arriba para dejar sitio al QR centrado bajo el cargo
-    line_y = float(os.environ.get("CERT_PDF_PLANTILLA_LINEA_FIRMA_CM", "3.05")) * cm
-    line_half = 4.2 * cm
-    max_sig_w, max_sig_h = 4.8 * cm, 2.1 * cm
-    if doctor_firma_bytes:
-        try:
-            ir_sig = ImageReader(io.BytesIO(doctor_firma_bytes))
-            iw, ih = ir_sig.getSize()
-            sc = min(max_sig_w / float(iw), max_sig_h / float(ih))
-            sw, sh = iw * sc, ih * sc
-            c.drawImage(
-                ir_sig,
-                cx - sw / 2,
-                line_y + 0.12 * cm,
-                width=sw,
-                height=sh,
-                mask="auto",
-            )
-        except Exception:
-            pass
-
-    c.setStrokeColor(colors.black)
-    c.setLineWidth(0.6)
-    c.line(cx - line_half, line_y, cx + line_half, line_y)
-
-    gen = (doctor_genero or "").strip()
-    pref = "Dr. " if gen == "Masculino" else "Dra. " if gen == "Femenino" else ""
-    nom_doc = (doctor_nombres or "").strip().upper()
-    firmante_line = (pref + nom_doc).strip() or (os.environ.get("CERT_FIRMANTE_NOMBRE") or "").strip()
-    if firmante_line:
-        c.setFont(FONT_SANS, FONT_FIRMANTE_SIZE)
+    # Fecha de emisión (bajo el cuerpo / nombre)
+    fecha_txt = (fecha_emision or "").strip()
+    if fecha_txt:
+        c.setFont(FONT_SANS, 9)
         c.setFillColor(colors.black)
-        c.drawCentredString(cx, line_y - 0.4 * cm, firmante_line)
-    c.setFont(FONT_SANS_BOLD, FONT_CARGO_SIZE)
-    c.setFillColor(colors.black)
+        c.drawCentredString(cx, max(y - 0.15 * cm, 4.6 * cm), f"Fecha de emisión: {fecha_txt}")
+
+    # Firmantes: uno o varios (doctores[])
+    firmantes = []
+    if doctores:
+        for d in doctores:
+            if not isinstance(d, dict):
+                continue
+            firmantes.append({
+                "firma_bytes": d.get("firma_bytes"),
+                "nombres": d.get("nombres"),
+                "genero": d.get("genero"),
+            })
+    if not firmantes:
+        firmantes.append({
+            "firma_bytes": doctor_firma_bytes,
+            "nombres": doctor_nombres,
+            "genero": doctor_genero,
+        })
+
+    line_y = float(os.environ.get("CERT_PDF_PLANTILLA_LINEA_FIRMA_CM", "3.05")) * cm
+    n = max(1, len(firmantes))
+    slot_w = inner_w / n
+    max_sig_w = min(4.2 * cm, slot_w * 0.78)
+    max_sig_h = 2.0 * cm
+    line_half = min(3.6 * cm, slot_w * 0.42)
     cargo_baseline = line_y - 0.78 * cm
     inst_cargo = ((institucion_nombre or "").strip() or "CENTRO EDUCATIVO").upper()
-    c.drawCentredString(cx, cargo_baseline, f"DIRECTOR DE {inst_cargo}")
 
-    # --- QR centrado debajo del cargo (pequeño; no tapa esquinas del marco) ---
+    for idx, doc in enumerate(firmantes):
+        slot_cx = margin_x + slot_w * (idx + 0.5)
+        firma_b = doc.get("firma_bytes")
+        if firma_b:
+            try:
+                ir_sig = ImageReader(io.BytesIO(firma_b))
+                iw, ih = ir_sig.getSize()
+                sc = min(max_sig_w / float(iw), max_sig_h / float(ih))
+                sw, sh = iw * sc, ih * sc
+                c.drawImage(
+                    ir_sig,
+                    slot_cx - sw / 2,
+                    line_y + 0.12 * cm,
+                    width=sw,
+                    height=sh,
+                    mask="auto",
+                )
+            except Exception:
+                pass
+
+        c.setStrokeColor(colors.black)
+        c.setLineWidth(0.6)
+        c.line(slot_cx - line_half, line_y, slot_cx + line_half, line_y)
+
+        gen = (doc.get("genero") or "").strip()
+        pref = "Dr. " if gen == "Masculino" else "Dra. " if gen == "Femenino" else ""
+        nom_doc = (doc.get("nombres") or "").strip().upper()
+        firmante_line = (pref + nom_doc).strip() or (os.environ.get("CERT_FIRMANTE_NOMBRE") or "").strip()
+        if firmante_line:
+            c.setFont(FONT_SANS, FONT_FIRMANTE_SIZE)
+            c.setFillColor(colors.black)
+            c.drawCentredString(slot_cx, line_y - 0.4 * cm, firmante_line)
+        c.setFont(FONT_SANS_BOLD, FONT_CARGO_SIZE)
+        c.setFillColor(colors.black)
+        c.drawCentredString(slot_cx, cargo_baseline, f"DIRECTOR DE {inst_cargo}")
+
+    # --- QR centrado debajo del cargo ---
     qr = qrcode.QRCode(version=None, box_size=1, border=1)
     qr.add_data(qr_payload)
     qr.make(fit=True)
@@ -354,7 +384,6 @@ def generar_pdf_diploma(
     pil_img.save(buf, format="PNG")
     buf.seek(0)
     qr_size = float(os.environ.get("CERT_PDF_QR_SIZE_CM", "1.12")) * cm
-    # Espacio bajo la línea de base del cargo (descendentes + separación)
     drop_below_cargo = 0.45 * cm
     qy = cargo_baseline - drop_below_cargo - qr_size
     qx = cx - qr_size / 2.0
@@ -383,11 +412,9 @@ def generar_pdf_diploma_bytes(
     doctor_genero: str | None = None,
     plantilla_fondo_bytes: bytes | None = None,
     institucion_nombre: str | None = None,
+    doctores: list | None = None,
 ) -> bytes:
-    """Genera el PDF en memoria (para guardar en SQL Server VARBINARY).
-
-    En ``texto_cuerpo`` se expanden ``[[CURSO]]`` y ``[[TIPO]]`` con ``curso`` y ``tipo_credencial``.
-    """
+    """Genera el PDF en memoria (para guardar en SQL Server VARBINARY)."""
     buf = io.BytesIO()
     generar_pdf_diploma(
         buf,
@@ -404,5 +431,6 @@ def generar_pdf_diploma_bytes(
         doctor_genero=doctor_genero,
         plantilla_fondo_bytes=plantilla_fondo_bytes,
         institucion_nombre=institucion_nombre,
+        doctores=doctores,
     )
     return buf.getvalue()

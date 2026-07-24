@@ -177,251 +177,155 @@
           id="create"
           class="interface p-6 border border-gray-100 rounded-xl bg-gray-50/50 hidden"
         >
-          <h2 class="text-2xl font-bold text-teal-900 mb-2">
-            Emisión de certificado (PDF firmado)
-          </h2>
-          <p class="text-gray-600 mb-6">
-            Abra la carpeta que necesite: emisión de un alumno, o emisión en
-            cantidad por universidad/área. El PDF incluye logo del hospital,
-            logo de universidad del centro (si lo subió), QR y firma.
-          </p>
+          <div class="mb-5">
+            <h2 class="text-2xl font-bold text-teal-900">Armar certificado</h2>
+            <p class="text-gray-600 text-sm mt-1">
+              Complete las piezas del rompecabezas. La vista previa se actualiza al instante.
+              Un alumno = un PDF; varios alumnos = un PDF por cada uno con los mismos datos.
+            </p>
+          </div>
 
-          <details
-            id="folder-emit-single"
-            class="emit-folder mb-4 rounded-xl border border-teal-200 bg-white overflow-hidden open:shadow-md"
-            open
-          >
-            <summary
-              class="emit-folder-summary cursor-pointer select-none list-none flex items-center gap-3 px-4 py-3 bg-teal-700 text-white font-bold hover:bg-teal-800"
-            >
-              <span class="emit-folder-icon text-lg leading-none" aria-hidden="true">📁</span>
-              <span>
-                Emisión independiente
-                <span class="block text-xs font-medium text-teal-100 mt-0.5"
-                  >Un certificado a la vez — seleccione un alumno</span
-                >
-              </span>
-            </summary>
-            <div class="p-4 md:p-5 border-t border-teal-100 bg-teal-50/30">
-          <form
-            id="form-create"
-            class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4"
-          >
-            <div class="relative">
-              <label class="block text-sm font-semibold text-gray-700 mb-1"
-                >Seleccionar alumno (uno a uno)</label
-              >
-              <input
-                type="text"
-                id="input-student-search"
-                required
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-                placeholder="Buscar por nombre o DNI..."
-                autocomplete="off"
-              />
-              <input type="hidden" id="input-student-id" />
-              <div
-                id="student-dropdown"
-                class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden"
-              ></div>
-            </div>
-            <div class="relative">
-              <label class="block text-sm font-semibold text-gray-700 mb-1">
-                Programa / actividad / curso
-              </label>
-              <div
-                id="course-combobox"
-                class="flex rounded-lg border border-gray-300 bg-white overflow-hidden shadow-sm focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-400"
-              >
-                <input
-                  type="text"
-                  id="input-course-search"
-                  required
-                  autocomplete="off"
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-expanded="false"
-                  aria-controls="course-dropdown"
-                  class="flex-1 min-w-0 border-0 p-3 outline-none text-gray-900 placeholder:text-gray-400"
-                  placeholder="Buscar curso o pulse ▾ para ver todos…"
-                />
-                <button
-                  type="button"
-                  id="btn-course-dropdown"
-                  class="shrink-0 px-3 border-l border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center min-w-[2.75rem]"
-                  title="Abrir lista de cursos (catálogo)"
-                  aria-label="Abrir lista de cursos del catálogo"
-                >
-                  <span class="text-xl leading-none font-bold select-none" aria-hidden="true">▾</span>
-                </button>
-              </div>
-              <input type="hidden" id="input-course-id" value="" />
-              <div
-                id="course-dropdown"
-                role="listbox"
-                class="absolute z-20 left-0 right-0 top-full mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto hidden"
-              ></div>
-              <p class="text-xs text-gray-500 mt-1">
-                Debe elegir un curso de la lista (no basta con escribir el nombre a mano).
-              </p>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1"
-                >Fecha de emisión</label
-              >
-              <input
-                type="date"
-                id="input-date"
-                required
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1"
-                >Tipo de credencial</label
-              >
-              <select
-                id="input-type"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-              >
-                <option value="">Cargando tipos...</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1"
-                >Centro educativo</label
-              >
-              <select
-                id="input-centro-id"
-                required
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-              >
-                <option value="">Cargando centros...</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-1"
-                >Director (firma en el certificado)</label
-              >
-              <select
-                id="input-firma-doctor-id"
-                required
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-              >
-                <option value="">Cargando directores...</option>
-              </select>
-              <p class="text-xs text-gray-500 mt-1">
-                Se usa Dr. o Dra. según el género registrado en Catálogos.
-              </p>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-semibold text-gray-700 mb-1"
-                >Texto guardado (opcional)</label
-              >
-              <select
-                id="select-body-preset"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
-              >
-                <option value="">— Escribir manualmente —</option>
-              </select>
-              <p class="text-xs text-gray-500 mt-1">
-                Al elegir una opción se copia el texto al recuadro de abajo; puede
-                editarlo antes de emitir.
-              </p>
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-sm font-semibold text-gray-700 mb-1">
-                Texto del cuerpo del diploma (opcional)
-              </label>
-              <textarea
-                id="input-body"
-                rows="4"
-                class="w-full p-3 border border-gray-300 rounded-lg outline-none"
-                placeholder="Párrafo en cursiva centrado. Si lo deja vacío, no aparece texto de cuerpo en el PDF."
-              ></textarea>
-              <p class="text-xs text-gray-500 mt-1">
-                Si escribe <code class="bg-gray-100 px-1 rounded">[[CURSO]]</code>, al elegir el programa en la
-                lista de arriba se sustituye por el nombre del curso. Si ya eligió el curso, el botón inserta
-                directamente ese nombre. El tipo de credencial ya va en el título grande del PDF.
-              </p>
-              <div class="flex flex-wrap gap-2 mt-2">
-                <button
-                  type="button"
-                  id="btn-insert-curso-marker"
-                  class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300"
-                >
-                  Insertar curso aquí
-                </button>
-              </div>
-            </div>
-            <div class="md:col-span-2">
-              <button
-                type="submit"
-                id="btn-create"
-                class="w-full bg-teal-600 text-white py-3 px-4 rounded-lg hover:bg-teal-700 font-bold shadow-md flex items-center justify-center transition-colors"
-              >
-                <span id="text-create">Generar PDF y firma digital</span>
-                <div
-                  id="spinner-create"
-                  class="loading-spinner hidden ml-2"
-                ></div>
-              </button>
-            </div>
-          </form>
-          <div
-            id="result-create"
-            class="p-4 rounded-lg text-center text-lg font-medium hidden"
-          ></div>
-            </div>
-          </details>
+          <div class="emit-builder grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            <div class="space-y-3" id="emit-pieces">
+              <article class="puzzle-piece" data-piece="alumnos">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">1</span>
+                  <div>
+                    <h3>Alumnos</h3>
+                    <p>Busque o filtre por universidad / área y agregue al grupo</p>
+                  </div>
+                  <span class="puzzle-status" id="piece-status-alumnos">vacío</span>
+                </header>
+                <div class="puzzle-piece-body">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                    <input type="text" id="builder-filter-uni" class="puzzle-input" placeholder="Universidad…" />
+                    <input type="text" id="builder-filter-area" class="puzzle-input" placeholder="Área…" />
+                  </div>
+                  <div class="relative mb-2">
+                    <input type="text" id="builder-student-search" class="puzzle-input w-full" placeholder="Buscar por nombre o DNI…" autocomplete="off" />
+                    <div id="builder-student-dropdown" class="puzzle-dropdown hidden"></div>
+                  </div>
+                  <div class="flex flex-wrap gap-2 mb-2">
+                    <button type="button" id="builder-btn-load-group" class="px-3 py-1.5 rounded-lg bg-teal-700 text-white text-xs font-bold">Cargar grupo filtrado</button>
+                    <button type="button" id="builder-btn-clear-students" class="px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-semibold">Vaciar alumnos</button>
+                  </div>
+                  <div id="builder-students-chips" class="flex flex-wrap gap-2 min-h-[2.5rem]"></div>
+                  <p id="builder-students-meta" class="text-xs text-gray-500 mt-2">0 alumnos · sin universidad</p>
+                </div>
+              </article>
 
-          <details
-            id="folder-emit-bulk"
-            class="emit-folder rounded-xl border border-emerald-200 bg-white overflow-hidden open:shadow-md"
-          >
-            <summary
-              class="emit-folder-summary cursor-pointer select-none list-none flex items-center gap-3 px-4 py-3 bg-emerald-700 text-white font-bold hover:bg-emerald-800"
-            >
-              <span class="emit-folder-icon text-lg leading-none" aria-hidden="true">📂</span>
-              <span>
-                Emisión en cantidad
-                <span class="block text-xs font-medium text-emerald-100 mt-0.5"
-                  >Varios alumnos filtrados por universidad y área</span
-                >
-              </span>
-            </summary>
-            <div class="p-4 md:p-5 border-t border-emerald-100 bg-emerald-50/40">
-              <p class="text-sm text-gray-700 mb-4 rounded-lg border border-emerald-200 bg-white px-3 py-2">
-                Antes de generar el lote, complete en la carpeta
-                <b>Emisión independiente</b> el curso, fecha, tipo de
-                credencial, centro, firma y texto del cuerpo (se reutilizan para todo el grupo).
-              </p>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                <div>
-                  <label class="block text-xs font-semibold text-gray-600 mb-1">Filtrar universidad</label>
-                  <input type="text" id="bulk-filter-universidad" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Ej. César Vallejo" />
+              <article class="puzzle-piece" data-piece="curso">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">2</span>
+                  <div><h3>Programa / curso</h3><p>Pieza del título académico</p></div>
+                  <span class="puzzle-status" id="piece-status-curso">vacío</span>
+                </header>
+                <div class="puzzle-piece-body relative">
+                  <div id="course-combobox" class="flex rounded-lg border border-gray-300 bg-white overflow-hidden">
+                    <input type="text" id="input-course-search" class="flex-1 min-w-0 border-0 p-2.5 outline-none text-sm" placeholder="Buscar curso…" autocomplete="off" />
+                    <button type="button" id="btn-course-dropdown" class="px-3 border-l bg-gray-50">▾</button>
+                  </div>
+                  <input type="hidden" id="input-course-id" value="" />
+                  <div id="course-dropdown" class="puzzle-dropdown hidden" role="listbox"></div>
                 </div>
-                <div>
-                  <label class="block text-xs font-semibold text-gray-600 mb-1">Filtrar área</label>
-                  <input type="text" id="bulk-filter-area" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Ej. Enfermería" />
+              </article>
+
+              <article class="puzzle-piece" data-piece="tipo">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">3</span>
+                  <div><h3>Tipo de credencial</h3><p>Título grande del diploma</p></div>
+                  <span class="puzzle-status" id="piece-status-tipo">vacío</span>
+                </header>
+                <div class="puzzle-piece-body">
+                  <select id="input-type" class="puzzle-input w-full"><option value="">Seleccione…</option></select>
                 </div>
-                <div class="flex items-end gap-2">
-                  <button type="button" id="btn-bulk-load" class="flex-1 px-3 py-2 rounded-lg bg-teal-700 text-white text-sm font-semibold hover:bg-teal-800">
-                    Cargar alumnos
-                  </button>
-                  <button type="button" id="btn-bulk-select-all" class="px-3 py-2 rounded-lg border border-teal-700 text-teal-800 text-sm font-semibold">
-                    Todos
-                  </button>
+              </article>
+
+              <article class="puzzle-piece" data-piece="centro">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">4</span>
+                  <div><h3>Centro educativo</h3><p>Institución y logo derecho</p></div>
+                  <span class="puzzle-status" id="piece-status-centro">vacío</span>
+                </header>
+                <div class="puzzle-piece-body">
+                  <select id="input-centro-id" class="puzzle-input w-full"><option value="">Seleccione…</option></select>
+                </div>
+              </article>
+
+              <article class="puzzle-piece" data-piece="fecha">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">5</span>
+                  <div><h3>Fecha de emisión</h3><p>Se imprime en el diploma</p></div>
+                  <span class="puzzle-status" id="piece-status-fecha">vacío</span>
+                </header>
+                <div class="puzzle-piece-body">
+                  <input type="date" id="input-date" class="puzzle-input w-full" />
+                </div>
+              </article>
+
+              <article class="puzzle-piece" data-piece="cuerpo">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">6</span>
+                  <div><h3>Texto del cuerpo</h3><p>Opcional · use [[CURSO]] y [[TIPO]]</p></div>
+                  <span class="puzzle-status" id="piece-status-cuerpo">opcional</span>
+                </header>
+                <div class="puzzle-piece-body space-y-2">
+                  <select id="select-body-preset" class="puzzle-input w-full"><option value="">— Escribir manualmente —</option></select>
+                  <textarea id="input-body" rows="3" class="puzzle-input w-full" placeholder="Párrafo en cursiva del diploma…"></textarea>
+                  <button type="button" id="btn-insert-curso-marker" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300">Insertar curso aquí</button>
+                </div>
+              </article>
+
+              <article class="puzzle-piece" data-piece="firmas">
+                <header class="puzzle-piece-head">
+                  <span class="puzzle-num">7</span>
+                  <div><h3>Firmas de directores</h3><p>Agregue una o más (máx. 4)</p></div>
+                  <span class="puzzle-status" id="piece-status-firmas">vacío</span>
+                </header>
+                <div class="puzzle-piece-body">
+                  <select id="input-firma-doctor-id" class="hidden" aria-hidden="true"><option value=""></option></select>
+                  <div id="builder-firmas-list" class="space-y-2 mb-2"></div>
+                  <div class="flex gap-2 items-end">
+                    <select id="builder-firma-picker" class="puzzle-input flex-1"><option value="">Elegir director…</option></select>
+                    <button type="button" id="builder-btn-add-firma" class="px-3 py-2 rounded-lg bg-teal-700 text-white text-xs font-bold whitespace-nowrap">+ Firma</button>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="xl:sticky xl:top-4">
+              <div class="flex items-center justify-between mb-3 gap-2">
+                <h3 class="font-bold text-teal-900">Vista previa</h3>
+                <span id="builder-preview-badge" class="text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-900">Armando…</span>
+              </div>
+              <div class="cert-preview-stage">
+                <div class="cert-preview" id="cert-preview">
+                  <div class="cert-preview-logos">
+                    <div class="cert-logo-slot filled" id="pv-logo-left">Hospital</div>
+                    <div class="cert-logo-slot" id="pv-logo-right">Universidad</div>
+                  </div>
+                  <p class="cert-preview-inst" id="pv-institucion">CENTRO EDUCATIVO</p>
+                  <p class="cert-preview-title" id="pv-tipo">TIPO DE CREDENCIAL</p>
+                  <p class="cert-preview-otorgado">Otorgado a :</p>
+                  <p class="cert-preview-name" id="pv-nombre">NOMBRE DEL ALUMNO</p>
+                  <p class="cert-preview-extra" id="pv-alumnos-extra"></p>
+                  <p class="cert-preview-uni" id="pv-universidad"></p>
+                  <p class="cert-preview-body" id="pv-cuerpo">El texto del cuerpo aparecerá aquí…</p>
+                  <p class="cert-preview-date" id="pv-fecha">Fecha de emisión: —</p>
+                  <div class="cert-preview-firmas" id="pv-firmas">
+                    <div class="cert-firma-slot empty"><span>Firma</span></div>
+                  </div>
+                  <div class="cert-preview-qr" title="QR de verificación">QR</div>
                 </div>
               </div>
-              <div id="bulk-students-list" class="max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 text-sm mb-3"></div>
-              <p id="bulk-selected-count" class="text-xs text-gray-600 mb-2">0 seleccionados</p>
-              <button type="button" id="btn-bulk-generate" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700">
-                Generar certificados del grupo
+              <button type="button" id="btn-builder-generate" class="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                <span id="text-create">Generar certificado(s)</span>
+                <div id="spinner-create" class="loading-spinner hidden"></div>
               </button>
-              <p id="bulk-result" class="text-sm mt-2 text-gray-700"></p>
+              <div id="result-create" class="mt-3 p-3 rounded-lg text-center text-sm font-medium hidden"></div>
+              <p id="builder-generate-hint" class="text-xs text-gray-500 mt-2 text-center">Complete las piezas obligatorias para habilitar la generación.</p>
             </div>
-          </details>
+          </div>
         </section>
 
         <section
@@ -1006,5 +910,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ url_for('static', filename='javascript/theme.js') }}"></script>
     <script src="{{ url_for('static', filename='javascript/admin.js') }}"></script>
+    <script src="{{ url_for('static', filename='javascript/emit_builder.js') }}"></script>
   </body>
 </html>

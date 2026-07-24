@@ -142,7 +142,7 @@ document.getElementById("btn-logout").addEventListener("click", async () => {
   window.location.href = "/";
 });
 
-// Student search functionality
+// Student search functionality (legado — el builder usa emit_builder.js)
 const studentSearch = document.getElementById("input-student-search");
 const studentDropdown = document.getElementById("student-dropdown");
 const studentIdInput = document.getElementById("input-student-id");
@@ -152,6 +152,7 @@ const courseSearch = document.getElementById("input-course-search");
 const courseDropdown = document.getElementById("course-dropdown");
 const courseHiddenId = document.getElementById("input-course-id");
 let coursesEmitList = [];
+window.coursesEmitList = coursesEmitList;
 let courseSearchTimeout;
 
 async function searchStudents(query) {
@@ -171,6 +172,7 @@ async function searchStudents(query) {
 }
 
 function renderStudentDropdown(students) {
+  if (!studentDropdown) return;
   studentDropdown.innerHTML = "";
   if (students.length === 0) {
     const noResults = document.createElement("div");
@@ -201,6 +203,7 @@ function renderStudentDropdown(students) {
 }
 
 function selectStudent(student) {
+  if (!studentSearch || !studentIdInput || !studentDropdown) return;
   studentSearch.value = student.name;
   studentIdInput.value = student.id;
   studentDropdown.classList.add("hidden");
@@ -208,28 +211,29 @@ function selectStudent(student) {
   studentSearch.classList.add("border-green-300");
 }
 
-studentSearch.addEventListener("input", (e) => {
-  const query = e.target.value.trim();
-  clearTimeout(searchTimeout);
-  if (query.length < 2) {
-    studentDropdown.classList.add("hidden");
-    studentIdInput.value = "";
-    studentSearch.classList.remove("border-green-300", "border-red-300");
-    studentSearch.classList.add("border-gray-300");
-    return;
-  }
-  searchTimeout = setTimeout(async () => {
-    const students = await searchStudents(query);
-    renderStudentDropdown(students);
-  }, 300);
-});
+if (studentSearch && studentDropdown && studentIdInput) {
+  studentSearch.addEventListener("input", (e) => {
+    const query = e.target.value.trim();
+    clearTimeout(searchTimeout);
+    if (query.length < 2) {
+      studentDropdown.classList.add("hidden");
+      studentIdInput.value = "";
+      studentSearch.classList.remove("border-green-300", "border-red-300");
+      studentSearch.classList.add("border-gray-300");
+      return;
+    }
+    searchTimeout = setTimeout(async () => {
+      const students = await searchStudents(query);
+      renderStudentDropdown(students);
+    }, 300);
+  });
 
-studentSearch.addEventListener("focus", () => {
-  if (studentSearch.value.trim().length >= 2) {
-    searchStudents(studentSearch.value.trim()).then(renderStudentDropdown);
-  }
-});
-
+  studentSearch.addEventListener("focus", () => {
+    if (studentSearch.value.trim().length >= 2) {
+      searchStudents(studentSearch.value.trim()).then(renderStudentDropdown);
+    }
+  });
+}
 function replaceCursoPlaceholderInBody(courseName) {
   const ta = document.getElementById("input-body");
   if (!ta) return;
@@ -290,6 +294,7 @@ function selectCourseEmit(c) {
   setCourseListboxOpen(false);
   applyCourseComboboxVisualState("ok");
   replaceCursoPlaceholderInBody(c.name);
+  if (window.EmitBuilder) window.EmitBuilder.refresh();
 }
 
 function tryCommitCourseEmitFromTypedName() {
@@ -1112,8 +1117,10 @@ async function loadCoursesIntoSelect() {
     coursesEmitList = (data.courses || [])
       .filter((c) => c.active)
       .map((c) => ({ id: c.id, name: String(c.name || "") }));
+    window.coursesEmitList = coursesEmitList;
   } catch {
     coursesEmitList = [];
+    window.coursesEmitList = coursesEmitList;
   }
   searchEl.placeholder = coursesEmitList.length
     ? "Buscar curso o pulse ▾ para ver todos…"
@@ -1160,6 +1167,9 @@ async function loadFirmaDoctoresIntoSelect() {
     opt.textContent = d.nombres || `ID ${d.id}`;
     firmaDoctorSelect.appendChild(opt);
   });
+  if (window.EmitBuilder && typeof window.EmitBuilder.setDoctorsCatalog === "function") {
+    window.EmitBuilder.setDoctorsCatalog(rows);
+  }
 }
 
 async function loadBodyTextPresetsForEmitForm(presetsFromCatalog) {
@@ -1453,7 +1463,8 @@ function showCreateResultError(resDiv, message) {
   resDiv.appendChild(document.createTextNode(message));
 }
 
-document.getElementById("form-create").addEventListener("submit", async (e) => {
+const formCreateEl = document.getElementById("form-create");
+if (formCreateEl) formCreateEl.addEventListener("submit", async (e) => {
   e.preventDefault();
   const btnSpinner = document.getElementById("spinner-create");
   const btnText = document.getElementById("text-create");
@@ -2047,6 +2058,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   setupBulkGeneration();
+  if (window.EmitBuilder) window.EmitBuilder.refresh();
 });
 
 function updateBulkSelectedCount() {
@@ -2239,6 +2251,7 @@ if (selectBodyPreset) {
     if (!ta || !id) return;
     const m = window.__bodyPresetTextById || {};
     if (m[Number(id)] !== undefined) ta.value = m[Number(id)];
+    if (window.EmitBuilder) window.EmitBuilder.refresh();
   });
 }
 
