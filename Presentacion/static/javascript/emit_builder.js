@@ -11,6 +11,12 @@
     manualCargo: "",
     firmas: [], // {id, nombres, genero, cargo, image?}
     doctorsCatalog: [],
+    logosCatalog: [],
+    logoIzqId: null,
+    logoDerId: null,
+    logoDerSource: "centro", // centro | catalogo
+    logoImageCache: {},
+    centroLogoCache: {},
     imageCache: {},
   };
 
@@ -90,18 +96,103 @@
     if (meta) meta.textContent = `${state.students.length} alumno(s) seleccionados`;
   }
 
-  async function ensureFirmaImage(id) {
+  async function ensureLogoImage(id) {
     if (!id) return null;
-    if (state.imageCache[id]) return state.imageCache[id];
+    if (state.logoImageCache[id]) return state.logoImageCache[id];
     try {
-      const r = await fetch(`/api/admin/firma-doctores/${id}/image`, fetchOpts);
+      const r = await fetch(`/api/admin/logos/${id}/image`, fetchOpts);
       const data = await r.json().catch(() => ({}));
       if (r.ok && data.image) {
-        state.imageCache[id] = data.image;
+        state.logoImageCache[id] = data.image;
         return data.image;
       }
     } catch (_) {}
     return null;
+  }
+
+  async function ensureCentroLogo(centroId) {
+    if (!centroId) return null;
+    if (state.centroLogoCache[centroId]) return state.centroLogoCache[centroId];
+    try {
+      const r = await fetch(
+        `/api/admin/centros-educativos/${centroId}/logo`,
+        fetchOpts,
+      );
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.image) {
+        state.centroLogoCache[centroId] = data.image;
+        return data.image;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function fillLogoSelects() {
+    const izq = $("builder-logo-izq");
+    const der = $("builder-logo-der");
+    const fill = (sel, selectedId) => {
+      if (!sel) return;
+      const prev = selectedId != null ? String(selectedId) : sel.value;
+      sel.innerHTML =
+        sel.id === "builder-logo-izq"
+          ? `<option value="">— Sin logo / predeterminado —</option>`
+          : `<option value="">— Elegir del catálogo —</option>`;
+      state.logosCatalog
+        .filter((l) => l.active !== false)
+        .forEach((l) => {
+          const opt = document.createElement("option");
+          opt.value = String(l.id);
+          const cat = l.categoria ? ` (${l.categoria})` : "";
+          opt.textContent = `${l.name || "Logo"}${cat}`;
+          sel.appendChild(opt);
+        });
+      if (prev) sel.value = prev;
+    };
+    fill(izq, state.logoIzqId);
+    fill(der, state.logoDerId);
+  }
+
+  async function updateLogoPreview() {
+    const imgIzq = $("pv-logo-izq");
+    const phIzq = $("pv-logo-izq-ph");
+    const imgDer = $("pv-logo-der");
+    const phDer = $("pv-logo-der-ph");
+
+    let leftUrl = null;
+    if (state.logoIzqId) leftUrl = await ensureLogoImage(state.logoIzqId);
+    if (imgIzq && phIzq) {
+      if (leftUrl) {
+        imgIzq.src = leftUrl;
+        imgIzq.classList.remove("hidden");
+        phIzq.classList.add("hidden");
+      } else {
+        imgIzq.classList.add("hidden");
+        phIzq.classList.remove("hidden");
+        phIzq.textContent = "Logo izq.";
+      }
+    }
+
+    let rightUrl = null;
+    if (state.logoDerSource === "catalogo" && state.logoDerId) {
+      rightUrl = await ensureLogoImage(state.logoDerId);
+    } else {
+      const centroId = $("input-centro-id")?.value;
+      if (centroId) rightUrl = await ensureCentroLogo(centroId);
+    }
+    if (imgDer && phDer) {
+      if (rightUrl) {
+        imgDer.src = rightUrl;
+        imgDer.classList.remove("hidden");
+        phDer.classList.add("hidden");
+      } else {
+        imgDer.classList.add("hidden");
+        phDer.classList.remove("hidden");
+        phDer.textContent =
+          state.logoDerSource === "centro"
+            ? "Logo univ. / centro"
+            : "Logo der.";
+      }
+    }
   }
 
   async function renderFirmasList() {
@@ -286,8 +377,16 @@
       if (zone === "cuerpo") filled = !!bodyRaw;
       if (zone === "fecha") filled = !!date;
       if (zone === "firmas") filled = state.firmas.length > 0;
+      if (zone === "logo-izq") filled = !!state.logoIzqId;
+      if (zone === "logo-der") {
+        filled =
+          (state.logoDerSource === "catalogo" && !!state.logoDerId) ||
+          (state.logoDerSource === "centro" && !!$("input-centro-id")?.value);
+      }
       z.classList.toggle("is-filled", filled);
     });
+
+    updateLogoPreview();
   }
 
   function refresh() {
@@ -297,6 +396,7 @@
     }
     renderStudentsChips();
     renderFirmasList();
+    fillLogoSelects();
     updatePreview();
   }
 
@@ -539,6 +639,27 @@
       $(id)?.addEventListener("change", refresh);
       $(id)?.addEventListener("input", refresh);
     });
+    $("builder-logo-izq")?.addEventListener("change", () => {
+      const v = $("builder-logo-izq")?.value;
+      state.logoIzqId = v ? Number(v) : null;
+      refresh();
+    });
+    $("builder-logo-der")?.addEventListener("change", () => {
+      const v = $("builder-logo-der")?.value;
+      state.logoDerId = v ? Number(v) : null;
+      refresh();
+    });
+    document.querySelectorAll('input[name="logo-der-source"]').forEach((r) => {
+      r.addEventListener("change", () => {
+        const checked = document.querySelector(
+          'input[name="logo-der-source"]:checked',
+        );
+        state.logoDerSource = checked?.value === "catalogo" ? "catalogo" : "centro";
+        const derSel = $("builder-logo-der");
+        if (derSel) derSel.disabled = state.logoDerSource !== "catalogo";
+        refresh();
+      });
+    });
     const courseId = $("input-course-id");
     if (courseId) {
       let last = courseId.value;
@@ -601,7 +722,12 @@
       centro_educativo_id: centroId,
       firma_doctor_id: firmaIds[0],
       firma_doctor_ids: firmaIds,
+      logo_derecho_source: state.logoDerSource,
     };
+    if (state.logoIzqId) common.logo_izquierdo_id = state.logoIzqId;
+    if (state.logoDerSource === "catalogo" && state.logoDerId) {
+      common.logo_derecho_id = state.logoDerId;
+    }
     if (bodyTxt) common.body_text = bodyTxt;
     if (presetSel?.value) common.body_text_catalog_id = presetSel.value;
 
@@ -681,11 +807,20 @@
       renderFirmasList();
       updatePreview();
     },
+    setLogosCatalog(rows) {
+      state.logosCatalog = Array.isArray(rows) ? rows : [];
+      fillLogoSelects();
+      updateLogoPreview();
+      updatePreview();
+    },
     reset() {
       state.students = [];
       state.firmas = [];
       state.manualName = "";
       state.manualCargo = "";
+      state.logoIzqId = null;
+      state.logoDerId = null;
+      state.logoDerSource = "centro";
       refresh();
     },
   };

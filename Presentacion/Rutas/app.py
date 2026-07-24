@@ -27,7 +27,13 @@ from flask import (
 sys.path.insert(0, ruta_raiz)
 
 from Aplicacion.Servicios import certificado
-from Persistencia.database import init_db, get_db_connection, ensure_usuarios_practica_columns, ensure_firma_doctores_schema
+from Persistencia.database import (
+    init_db,
+    get_db_connection,
+    ensure_usuarios_practica_columns,
+    ensure_firma_doctores_schema,
+    ensure_logos_institucionales_schema,
+)
 from Aplicacion.Servicios import auth_usuarios
 from Aplicacion.Servicios.image_transparency import strip_uniform_background_to_png
 from Aplicacion.Servicios.email_certificado import enviar_correo_credenciales_registro, correo_habilitado
@@ -288,6 +294,9 @@ def generate_certificates_bulk():
         'firma_doctor_ids': datos.get('firma_doctor_ids'),
         'body_text': datos.get('body_text'),
         'body_text_catalog_id': datos.get('body_text_catalog_id'),
+        'logo_izquierdo_id': datos.get('logo_izquierdo_id'),
+        'logo_derecho_id': datos.get('logo_derecho_id'),
+        'logo_derecho_source': datos.get('logo_derecho_source'),
     }
 
     try:
@@ -808,6 +817,210 @@ def admin_update_centro_educativo_active(centro_id: int):
         conn.close()
 
 
+@app.route('/api/admin/centros-educativos/<int:centro_id>/logo', methods=['GET'])
+@login_required_api
+@admin_required_api
+def admin_centro_educativo_logo(centro_id: int):
+    """Logo de universidad del centro (para vista previa del diploma)."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT LogoDerecho FROM CentroEducativo
+            WHERE IdCentroEducativo = ? AND Estado = N'Activo'
+            """,
+            (centro_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "No encontrado"}), 404
+        raw = getattr(row, "LogoDerecho", None)
+        if raw is None:
+            return jsonify({"success": True, "image": None})
+        blob = bytes(raw) if not isinstance(raw, (bytes, bytearray)) else bytes(raw)
+        if not blob:
+            return jsonify({"success": True, "image": None})
+        mime = "image/png"
+        if blob[:3] == b"\xff\xd8\xff":
+            mime = "image/jpeg"
+        b64 = base64.b64encode(blob).decode("ascii")
+        return jsonify({"success": True, "image": f"data:{mime};base64,{b64}"})
+    finally:
+        conn.close()
+
+
+@app.route('/api/admin/logos', methods=['GET'])
+@login_required_api
+@admin_required_api
+def admin_list_logos():
+    ensure_logos_institucionales_schema()
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT IdLogo, Nombre, Categoria, Estado,
+                   CASE WHEN Imagen IS NOT NULL AND DATALENGTH(Imagen) > 0 THEN 1 ELSE 0 END AS HasImagen
+            FROM LogosInstitucionales
+            ORDER BY Nombre ASC
+            """
+        )
+        rows = []
+        for row in cursor.fetchall():
+            rows.append({
+                "id": int(row.IdLogo),
+                "name": row.Nombre,
+                "categoria": (row.Categoria or "") or "",
+                "active": (row.Estado or "").strip().lower() == "activo",
+                "hasImagen": bool(getattr(row, "HasImagen", 0)),
+            })
+        return jsonify({"success": True, "logos": rows})
+    finally:
+        conn.close()
+
+
+@app.route('/api/admin/logos', methods=['POST'])
+@login_required_api
+@admin_required_api
+def admin_create_logo():
+    ensure_logos_institucionales_schema()
+    datos = request.get_json(silent=True) or {}
+    name = (datos.get("name") or "").strip()
+    if not name:
+        return jsonify({"success": False, "error": "El nombre del logo es obligatorio"}), 400
+    if len(name) > 200:
+        return jsonify({"success": False, "error": "El nombre no puede superar 200 caracteres"}), 400
+    categoria = (datos.get("categoria") or "").strip()
+    if len(categoria) > 50:
+        return jsonify({"success": False, "error": "La categoría no puede superar 50 caracteres"}), 400
+    estado = (datos.get("estado") or "Activo").strip()
+    if estado not in ("Activo", "Inactivo"):
+        return jsonify({"success": False, "error": "Estado debe ser Activo o Inactivo"}), 400
+    imagen_bin = None
+    b64 = datos.get("imagen_base64")
+    if b64:
+        try:
+            raw = base64.b64decode(str(b64).strip())
+        except Exception:
+            return jsonify({"success": False, "error": "imagen_base64 no es Base64 válido"}), 400
+        if len(raw) > 5 * 1024 * 1024:
+            return jsonify({"success": False, "error": "La imagen no puede superar 5 MB"}), 400
+        try:
+            imagen_bin = strip_uniform_background_to_png(raw)
+        except Exception:
+            imagen_bin = raw
+    if not imagen_bin:
+        return jsonify({"success": False, "error": "Debe subir una imagen del logo"}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO LogosInstitucionales (Nombre, Categoria, Imagen, Estado)
+            VALUES (?, ?, ?, ?)
+            """,
+            (name, categoria or None, imagen_bin, estado),
+        )
+        new_id = None
+        try:
+            cursor.execute("SELECT CAST(SCOPE_IDENTITY() AS INT)")
+            row = cursor.fetchone()
+            if row and row[0] is not None:
+                new_id = int(row[0])
+        except Exception:
+            new_id = None
+        conn.commit()
+        return jsonify({
+            "success": True,
+            "id": new_id,
+            "name": name,
+            "categoria": categoria,
+            "active": estado == "Activo",
+            "hasImagen": True,
+        })
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 400
+    finally:
+        conn.close()
+
+
+@app.route('/api/admin/logos/<int:logo_id>/image', methods=['GET'])
+@login_required_api
+@admin_required_api
+def admin_logo_image(logo_id: int):
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT Imagen FROM LogosInstitucionales
+            WHERE IdLogo = ? AND Estado = N'Activo'
+            """,
+            (logo_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({"success": False, "error": "No encontrado"}), 404
+        raw = getattr(row, "Imagen", None)
+        if raw is None:
+            return jsonify({"success": True, "image": None})
+        blob = bytes(raw) if not isinstance(raw, (bytes, bytearray)) else bytes(raw)
+        if not blob:
+            return jsonify({"success": True, "image": None})
+        mime = "image/png"
+        if blob[:3] == b"\xff\xd8\xff":
+            mime = "image/jpeg"
+        b64 = base64.b64encode(blob).decode("ascii")
+        return jsonify({"success": True, "image": f"data:{mime};base64,{b64}"})
+    finally:
+        conn.close()
+
+
+@app.route('/api/admin/logos/<int:logo_id>/active', methods=['PATCH'])
+@login_required_api
+@admin_required_api
+def admin_update_logo_active(logo_id: int):
+    datos = request.get_json(silent=True) or {}
+    active = datos.get("active")
+    if not isinstance(active, bool):
+        return jsonify({"success": False, "error": "El campo 'active' debe ser booleano"}), 400
+    nuevo_estado = "Activo" if active else "Inactivo"
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE LogosInstitucionales
+            SET Estado = ?
+            WHERE IdLogo = ?
+            """,
+            (nuevo_estado, logo_id),
+        )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return jsonify({"success": False, "error": "Logo no encontrado"}), 404
+        conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"success": False, "error": str(e)}), 400
+    finally:
+        conn.close()
+
+
 @app.route('/api/admin/firma-doctores', methods=['GET'])
 @login_required_api
 @admin_required_api
@@ -1217,6 +1430,10 @@ def _bootstrap_app():
         ensure_firma_doctores_schema()
     except Exception as exc:
         print(f"[bootstrap] firma schema: {exc}")
+    try:
+        ensure_logos_institucionales_schema()
+    except Exception as exc:
+        print(f"[bootstrap] logos schema: {exc}")
     try:
         auth_usuarios.asegurar_admin_por_defecto()
     except Exception as exc:

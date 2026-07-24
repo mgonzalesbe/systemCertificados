@@ -442,6 +442,7 @@ navBtns.forEach((btn) => {
       loadCentrosIntoSelect().catch(() => {});
       loadFirmaDoctoresIntoSelect().catch(() => {});
       loadBodyTextPresetsForEmitForm(null).catch(() => {});
+      loadLogosIntoEmitBuilder().catch(() => {});
     }
     if (targetId === "catalogs") loadCatalogs();
   });
@@ -1172,6 +1173,20 @@ async function loadFirmaDoctoresIntoSelect() {
   }
 }
 
+async function loadLogosIntoEmitBuilder() {
+  try {
+    const data = await fetchJson("/api/admin/logos");
+    const rows = (data.logos || []).filter((l) => l.active);
+    if (window.EmitBuilder && typeof window.EmitBuilder.setLogosCatalog === "function") {
+      window.EmitBuilder.setLogosCatalog(rows);
+    }
+  } catch (_) {
+    if (window.EmitBuilder && typeof window.EmitBuilder.setLogosCatalog === "function") {
+      window.EmitBuilder.setLogosCatalog([]);
+    }
+  }
+}
+
 async function loadBodyTextPresetsForEmitForm(presetsFromCatalog) {
   const sel = document.getElementById("select-body-preset");
   if (!sel) return;
@@ -1213,6 +1228,7 @@ async function loadCatalogs() {
     await loadCentrosIntoSelect().catch(() => {});
     await loadFirmaDoctoresIntoSelect().catch(() => {});
     await loadBodyTextPresetsForEmitForm(null).catch(() => {});
+    await loadLogosIntoEmitBuilder().catch(() => {});
     return;
   }
   const courses = (await fetchJson("/api/admin/courses")).courses || [];
@@ -1225,6 +1241,12 @@ async function loadCatalogs() {
   }
   const centros = (await fetchJson("/api/admin/centros-educativos")).centers || [];
   const doctors = (await fetchJson("/api/admin/firma-doctores")).doctors || [];
+  let logos = [];
+  try {
+    logos = (await fetchJson("/api/admin/logos")).logos || [];
+  } catch {
+    logos = [];
+  }
 
   coursesBody.replaceChildren();
   courses.forEach((c) => {
@@ -1353,6 +1375,42 @@ async function loadCatalogs() {
     });
   }
 
+  const logosBody = document.getElementById("table-logos");
+  if (logosBody) {
+    logosBody.replaceChildren();
+    logos.forEach((l) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="px-4 py-3 text-sm font-semibold">${l.name || ""}</td>
+        <td class="px-4 py-3 text-sm">${l.categoria || "—"}</td>
+        <td class="px-4 py-3 text-center text-sm">${l.hasImagen ? "Sí" : "No"}</td>
+        <td class="px-4 py-3 text-center text-sm">${l.active ? "Sí" : "No"}</td>
+        <td class="px-4 py-3 text-center text-sm"></td>
+      `;
+      const actionsTd = tr.lastElementChild;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = l.active
+        ? "px-3 py-1 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700"
+        : "px-3 py-1 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700";
+      btn.textContent = l.active ? "Deshabilitar" : "Habilitar";
+      btn.addEventListener("click", () =>
+        changeCatalogStatus({
+          kind: "logo",
+          id: l.id,
+          name: l.name || String(l.id),
+          currentActive: l.active,
+        }),
+      );
+      actionsTd.appendChild(btn);
+      logosBody.appendChild(tr);
+    });
+  }
+
+  if (window.EmitBuilder && typeof window.EmitBuilder.setLogosCatalog === "function") {
+    window.EmitBuilder.setLogosCatalog(logos.filter((l) => l.active));
+  }
+
   const doctorsBody = document.getElementById("table-firma-doctores");
   if (doctorsBody) {
     doctorsBody.replaceChildren();
@@ -1402,7 +1460,9 @@ async function changeCatalogStatus({ kind, id, name, currentActive }) {
           ? "director"
           : kind === "body_preset"
             ? "texto guardado"
-            : "tipo de credencial";
+            : kind === "logo"
+              ? "logo"
+              : "tipo de credencial";
   const actionLabel = nextActive ? "habilitar" : "deshabilitar";
   const endpoint =
     kind === "course"
@@ -1413,7 +1473,9 @@ async function changeCatalogStatus({ kind, id, name, currentActive }) {
           ? `/api/admin/firma-doctores/${id}/active`
           : kind === "body_preset"
             ? `/api/admin/body-text-presets/${id}/active`
-            : `/api/admin/credential-types/${id}/active`;
+            : kind === "logo"
+              ? `/api/admin/logos/${id}/active`
+              : `/api/admin/credential-types/${id}/active`;
   const msgEl = document.getElementById(
     kind === "course"
       ? "courses-msg"
@@ -1423,7 +1485,9 @@ async function changeCatalogStatus({ kind, id, name, currentActive }) {
           ? "firma-doctor-msg"
           : kind === "body_preset"
             ? "body-presets-msg"
-            : "ctypes-msg",
+            : kind === "logo"
+              ? "logos-msg"
+              : "ctypes-msg",
   );
 
   const accepted = await ModalUtil.show(
@@ -2352,6 +2416,65 @@ if (firmaDoctorForm) {
     } catch (err) {
       setMsg(msg, false, err.message || "Error");
       msg.classList.remove("hidden");
+    }
+  });
+}
+
+const logoForm = document.getElementById("form-new-logo");
+if (logoForm) {
+  logoForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("logos-msg");
+    if (msg) msg.classList.add("hidden");
+    const payload = {
+      name: document.getElementById("logo-name")?.value.trim() || "",
+      categoria: document.getElementById("logo-categoria")?.value.trim() || "",
+      estado: document.getElementById("logo-estado")?.value || "Activo",
+    };
+    if (!payload.name) {
+      setMsg(msg, false, "Ingrese el nombre del logo.");
+      if (msg) msg.classList.remove("hidden");
+      return;
+    }
+    const fin = document.getElementById("logo-archivo");
+    const f = fin && fin.files && fin.files[0];
+    if (!f) {
+      setMsg(msg, false, "Seleccione una imagen del logo.");
+      if (msg) msg.classList.remove("hidden");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setMsg(msg, false, "La imagen no puede superar 5 MB.");
+      if (msg) msg.classList.remove("hidden");
+      return;
+    }
+    try {
+      const b64 = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => {
+          const s = String(r.result || "");
+          const i = s.indexOf(",");
+          resolve(i >= 0 ? s.slice(i + 1) : s);
+        };
+        r.onerror = () => reject(new Error("No se pudo leer el archivo"));
+        r.readAsDataURL(f);
+      });
+      payload.imagen_base64 = b64;
+      await fetchJson("/api/admin/logos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setMsg(msg, true, "Logo registrado correctamente.");
+      if (msg) msg.classList.remove("hidden");
+      e.target.reset();
+      const st = document.getElementById("logo-estado");
+      if (st) st.value = "Activo";
+      await loadCatalogs();
+      await loadLogosIntoEmitBuilder().catch(() => {});
+    } catch (err) {
+      setMsg(msg, false, err.message || "Error");
+      if (msg) msg.classList.remove("hidden");
     }
   });
 }

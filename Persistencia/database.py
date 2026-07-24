@@ -349,6 +349,27 @@ def ensure_firma_doctores_schema():
         conn.close()
 
 
+def ensure_logos_institucionales_schema():
+    """Asegura tabla LogosInstitucionales."""
+    conn = get_db_connection()
+    if not conn:
+        return False
+    try:
+        cursor = conn.cursor()
+        _ensure_logos_institucionales(cursor)
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"ensure_logos_institucionales_schema: {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        conn.close()
+
+
 def ensure_usuarios_practica_columns():
     """
     Asegura columnas Universidad/Area (y demográficas) en Usuarios.
@@ -612,6 +633,24 @@ def _ensure_firma_doctores(cursor):
         return
     if not _column_exists(cursor, "FirmaDoctores", "Cargo"):
         cursor.execute("ALTER TABLE FirmaDoctores ADD Cargo NVARCHAR(200) NULL")
+
+
+def _ensure_logos_institucionales(cursor):
+    if _table_exists(cursor, "LogosInstitucionales"):
+        return
+    cursor.execute(
+        """
+        CREATE TABLE LogosInstitucionales (
+            IdLogo INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+            Nombre NVARCHAR(200) NOT NULL,
+            Categoria NVARCHAR(50) NULL,
+            Imagen VARBINARY(MAX) NULL,
+            Estado NVARCHAR(20) NOT NULL DEFAULT N'Activo',
+            FechaCreacion DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+            CONSTRAINT CK_LogosInstitucionales_Estado CHECK (Estado IN (N'Activo', N'Inactivo'))
+        )
+        """
+    )
 
 
 def _seed_centro_educativo_default(cursor):
@@ -978,6 +1017,7 @@ def init_db():
         _ensure_certificados(cursor)
         _ensure_centro_educativo(cursor)
         _ensure_firma_doctores(cursor)
+        _ensure_logos_institucionales(cursor)
         _seed_centro_educativo_default(cursor)
         _drop_inscripciones_legacy(cursor)
         _ensure_auditoria(cursor)
@@ -991,7 +1031,8 @@ def init_db():
         conn.commit()
         print(
             "Esquema verificado: TiposCredencial, Cursos, Usuarios, EstadisticasAplicacion, "
-            "Certificados, TextosCuerpoCertificado, CentroEducativo, FirmaDoctores, AuditoriaCertificados."
+            "Certificados, TextosCuerpoCertificado, CentroEducativo, FirmaDoctores, "
+            "LogosInstitucionales, AuditoriaCertificados."
         )
     except Exception as e:
         print(f"Error al crear o migrar tablas: {e}")

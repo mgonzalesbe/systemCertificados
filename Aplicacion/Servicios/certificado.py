@@ -459,11 +459,30 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
     curso_nombre = (datos_estudiante.get("course") or "").strip() or None
     tipo_nombre = (datos_estudiante.get("type") or "").strip() or None
     logo_derecho_bytes = None
+    logo_izquierdo_bytes = None
     doctor_firma_bytes = None
     doctor_nombres = None
     doctor_genero = None
     doctores_pdf = []
     centro_nombre = None
+
+    def _parse_optional_logo_id(key):
+        raw = datos_estudiante.get(key)
+        if raw in (None, ""):
+            return None
+        try:
+            lid = int(raw)
+            return lid if lid >= 1 else None
+        except (TypeError, ValueError):
+            return None
+
+    id_logo_izq = _parse_optional_logo_id("logo_izquierdo_id")
+    id_logo_der = _parse_optional_logo_id("logo_derecho_id")
+    # "centro" = usar logo de universidad del centro; "catalogo" = id_logo_der
+    logo_der_source = (datos_estudiante.get("logo_derecho_source") or "").strip().lower()
+    if not logo_der_source:
+        logo_der_source = "catalogo" if id_logo_der else "centro"
+
     conn = get_db_connection()
     if not conn:
         raise RuntimeError("No se pudo conectar a la base de datos para resolver catálogos")
@@ -496,10 +515,42 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
             raise ValueError("Centro educativo no válido o inactivo")
         centro_nombre = str(getattr(cr, "Nombre", "") or "").strip()
         raw_ld = getattr(cr, "LogoDerecho", None)
+        centro_logo_bytes = None
         if raw_ld is not None:
-            logo_derecho_bytes = bytes(raw_ld) if not isinstance(raw_ld, (bytes, bytearray)) else bytes(raw_ld)
-            if len(logo_derecho_bytes) == 0:
-                logo_derecho_bytes = None
+            centro_logo_bytes = bytes(raw_ld) if not isinstance(raw_ld, (bytes, bytearray)) else bytes(raw_ld)
+            if len(centro_logo_bytes) == 0:
+                centro_logo_bytes = None
+
+        def _load_catalog_logo(lid):
+            if not lid:
+                return None
+            try:
+                cursor.execute(
+                    """
+                    SELECT Imagen FROM LogosInstitucionales
+                    WHERE IdLogo = ? AND Estado = N'Activo'
+                    """,
+                    (lid,),
+                )
+            except Exception:
+                return None
+            lr = cursor.fetchone()
+            if not lr:
+                raise ValueError(f"Logo de catálogo no válido o inactivo (id={lid})")
+            raw = getattr(lr, "Imagen", None)
+            if raw is None:
+                return None
+            blob = bytes(raw) if not isinstance(raw, (bytes, bytearray)) else bytes(raw)
+            return blob or None
+
+        logo_izquierdo_bytes = _load_catalog_logo(id_logo_izq)
+        if logo_der_source == "catalogo" and id_logo_der:
+            logo_derecho_bytes = _load_catalog_logo(id_logo_der)
+        else:
+            logo_derecho_bytes = centro_logo_bytes
+            # Si eligieron catálogo universidad explícito también
+            if logo_der_source == "catalogo" and not logo_derecho_bytes and id_logo_der:
+                logo_derecho_bytes = _load_catalog_logo(id_logo_der)
         for fid in firma_ids:
             cursor.execute(
                 """
@@ -603,6 +654,7 @@ def crear_certificado(datos_estudiante, created_by_user_id=None):
             qr_payload=qr_payload,
             texto_cuerpo=body_text,
             logo_derecho_bytes=logo_derecho_bytes,
+            logo_izquierdo_bytes=logo_izquierdo_bytes,
             doctor_firma_bytes=doctor_firma_bytes,
             doctor_nombres=doctor_nombres,
             doctor_genero=doctor_genero,

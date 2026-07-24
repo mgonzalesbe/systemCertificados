@@ -157,51 +157,62 @@ def _draw_certificate_header(
     logo_derecho_bytes: bytes | None,
     tipo_credencial: str,
     institucion_nombre: str | None = None,
+    logo_izquierdo_bytes: bytes | None = None,
 ) -> float:
     """
-    Logos superior izquierdo (regional, assets) y derecho (universidad, bytes): mismo tamaño máximo,
-    misma altura (y_header_top) y misma separación respecto al borde interior (espejo).
-    Devuelve la coordenada Y (baseline) debajo del bloque de títulos.
+    Logos superior izquierdo y derecho (bytes del catálogo o centro).
+    Si no hay bytes izquierdos, intenta el logo estático del hospital como respaldo.
     """
     y_header_top = h - 1.55 * cm
     y_below_logos = y_header_top
-    # Mismo tope para ambos logos (simetría). Variables de entorno con prefijo REGIONAL por compatibilidad.
     logo_max_w = float(os.environ.get("CERT_PDF_LOGO_REGIONAL_MAX_W_CM", "4.95")) * cm
     logo_max_h = float(os.environ.get("CERT_PDF_LOGO_REGIONAL_MAX_H_CM", "3.5")) * cm
-    # Misma distancia del borde interior: izquierda desde margin_x, derecha desde w - margin_x
     logo_inset_x = float(os.environ.get("CERT_PDF_LOGO_REGIONAL_OFFSET_X_CM", "3.8")) * cm
     left_x = margin_x + logo_inset_x
     right_x = w - margin_x - logo_inset_x
 
-    left_path = None
-    for name in (
-        "hospital-logo.jpeg",
-        "hospital-logo.jpg",
-        "hospital-logo.png",
-        "logo_hospital.png",
-        "logo_hospital.jpeg",
-    ):
-        p = os.path.join(_HOSPITAL_LOGO_DIR, name)
-        if os.path.isfile(p):
-            left_path = p
-            break
-    if not left_path:
-        left_path = _asset_path(
-            "logo_gobierno_regional.png",
-            "logo_regional.png",
-            "logo_izquierda.png",
-            "logo_gobierno.png",
-            "logo.png",
-        )
-    if left_path:
+    left_drawn = False
+    if logo_izquierdo_bytes:
         try:
-            left_ir = ImageReader(left_path)
+            left_ir = ImageReader(io.BytesIO(logo_izquierdo_bytes))
             y_below_logos = min(
                 y_below_logos,
                 _draw_scaled_image(c, left_ir, left_x, y_header_top, logo_max_w, logo_max_h, "left"),
             )
+            left_drawn = True
         except Exception:
-            pass
+            left_drawn = False
+
+    if not left_drawn:
+        left_path = None
+        for name in (
+            "hospital-logo.jpeg",
+            "hospital-logo.jpg",
+            "hospital-logo.png",
+            "logo_hospital.png",
+            "logo_hospital.jpeg",
+        ):
+            p = os.path.join(_HOSPITAL_LOGO_DIR, name)
+            if os.path.isfile(p):
+                left_path = p
+                break
+        if not left_path:
+            left_path = _asset_path(
+                "logo_gobierno_regional.png",
+                "logo_regional.png",
+                "logo_izquierda.png",
+                "logo_gobierno.png",
+                "logo.png",
+            )
+        if left_path:
+            try:
+                left_ir = ImageReader(left_path)
+                y_below_logos = min(
+                    y_below_logos,
+                    _draw_scaled_image(c, left_ir, left_x, y_header_top, logo_max_w, logo_max_h, "left"),
+                )
+            except Exception:
+                pass
 
     if logo_derecho_bytes:
         try:
@@ -213,7 +224,6 @@ def _draw_certificate_header(
         except Exception:
             pass
 
-    # Baja el bloque de títulos y todo lo que sigue (Hospital / Reconocimiento / cuerpo…)
     title_block_drop = float(os.environ.get("CERT_PDF_TITLE_BLOCK_DROP_CM", "1.55")) * cm
     y = y_below_logos - 0.28 * cm - title_block_drop
 
@@ -246,6 +256,7 @@ def generar_pdf_diploma(
     texto_cuerpo: str | None = None,
     *,
     logo_derecho_bytes: bytes | None = None,
+    logo_izquierdo_bytes: bytes | None = None,
     doctor_firma_bytes: bytes | None = None,
     doctor_nombres: str | None = None,
     doctor_genero: str | None = None,
@@ -275,7 +286,16 @@ def generar_pdf_diploma(
         _draw_background_cover(c, w, h, plantilla_ir)
 
     y = _draw_certificate_header(
-        c, w, h, margin_x, inner_w, cx, logo_derecho_bytes, tipo_credencial, institucion_nombre
+        c,
+        w,
+        h,
+        margin_x,
+        inner_w,
+        cx,
+        logo_derecho_bytes,
+        tipo_credencial,
+        institucion_nombre,
+        logo_izquierdo_bytes=logo_izquierdo_bytes,
     )
 
     c.setFillColor(colors.black)
@@ -410,6 +430,7 @@ def generar_pdf_diploma_bytes(
     texto_cuerpo: str | None = None,
     *,
     logo_derecho_bytes: bytes | None = None,
+    logo_izquierdo_bytes: bytes | None = None,
     doctor_firma_bytes: bytes | None = None,
     doctor_nombres: str | None = None,
     doctor_genero: str | None = None,
@@ -429,6 +450,7 @@ def generar_pdf_diploma_bytes(
         qr_payload=qr_payload,
         texto_cuerpo=texto_cuerpo,
         logo_derecho_bytes=logo_derecho_bytes,
+        logo_izquierdo_bytes=logo_izquierdo_bytes,
         doctor_firma_bytes=doctor_firma_bytes,
         doctor_nombres=doctor_nombres,
         doctor_genero=doctor_genero,

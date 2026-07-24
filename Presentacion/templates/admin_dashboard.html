@@ -202,6 +202,16 @@
                   id="cert-canvas"
                   style="background-image: url('{{ url_for('static', filename='imagenes/certificados/fondo_certificado.png') }}')"
                 >
+                  <button type="button" class="cert-zone cert-zone-logo-left" data-zone="logo-izq" id="zone-logo-izq" title="Logo superior izquierdo">
+                    <span class="cert-zone-label">Logo izq.</span>
+                    <img id="pv-logo-izq" class="cert-corner-logo hidden" alt="Logo izquierdo" />
+                    <span class="cert-logo-placeholder" id="pv-logo-izq-ph">Logo izq.</span>
+                  </button>
+                  <button type="button" class="cert-zone cert-zone-logo-right" data-zone="logo-der" id="zone-logo-der" title="Logo superior derecho">
+                    <span class="cert-zone-label">Logo der.</span>
+                    <img id="pv-logo-der" class="cert-corner-logo hidden" alt="Logo derecho" />
+                    <span class="cert-logo-placeholder" id="pv-logo-der-ph">Logo der. / universidad</span>
+                  </button>
                   <button type="button" class="cert-zone cert-zone-inst" data-zone="institucion" id="zone-institucion">
                     <span class="cert-zone-label">Institución</span>
                     <span class="cert-zone-value" id="pv-institucion">HOSPITAL DISTRITAL DE LAREDO</span>
@@ -274,10 +284,30 @@
                 </div>
               </div>
 
+              <div class="cert-editor-block hidden" data-editor="logo-izq" id="editor-logo-izq">
+                <h3 class="cert-editor-title">Logo superior izquierdo</h3>
+                <p class="text-xs text-gray-500 mb-2">Gobierno regional, hospital u otro logo del catálogo.</p>
+                <select id="builder-logo-izq" class="puzzle-input w-full"><option value="">— Sin logo / predeterminado —</option></select>
+              </div>
+
+              <div class="cert-editor-block hidden" data-editor="logo-der" id="editor-logo-der">
+                <h3 class="cert-editor-title">Logo superior derecho</h3>
+                <p class="text-xs text-gray-500 mb-2">Municipalidad, universidad u otro. Puede usar el logo del centro educativo elegido.</p>
+                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                  <input type="radio" name="logo-der-source" value="centro" id="logo-der-source-centro" checked />
+                  Logo de la universidad / centro seleccionado
+                </label>
+                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                  <input type="radio" name="logo-der-source" value="catalogo" id="logo-der-source-catalogo" />
+                  Logo del catálogo institucional
+                </label>
+                <select id="builder-logo-der" class="puzzle-input w-full" disabled><option value="">— Elegir del catálogo —</option></select>
+              </div>
+
               <div class="cert-editor-block hidden" data-editor="institucion" id="editor-institucion">
                 <h3 class="cert-editor-title">Institución / centro</h3>
                 <select id="input-centro-id" class="puzzle-input w-full"><option value="">Seleccione centro…</option></select>
-                <p class="text-xs text-gray-500 mt-2">Define el nombre centrado y el logo derecho del diploma.</p>
+                <p class="text-xs text-gray-500 mt-2">Define el nombre centrado. Si el centro tiene logo de universidad, puede usarlo en la esquina derecha.</p>
               </div>
 
               <div class="cert-editor-block hidden" data-editor="tipo" id="editor-tipo">
@@ -740,6 +770,69 @@
                   id="table-centros"
                   class="divide-y divide-gray-200"
                 >                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div
+            class="mt-6 bg-white p-5 rounded-xl shadow-sm border border-gray-200"
+          >
+            <h3 class="text-lg font-extrabold text-gray-800 mb-2">
+              Logos institucionales
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Hospital, gobierno regional, municipalidad, universidades u otros.
+              Luego se eligen en las esquinas del diploma al emitir.
+            </p>
+            <form
+              id="form-new-logo"
+              class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4"
+            >
+              <input
+                id="logo-name"
+                type="text"
+                required
+                class="p-3 border rounded-lg outline-none md:col-span-2"
+                placeholder="Nombre (ej. Gobierno Regional La Libertad)"
+              />
+              <select id="logo-categoria" class="p-3 border rounded-lg outline-none">
+                <option value="Hospital">Hospital</option>
+                <option value="GobiernoRegional">Gobierno regional</option>
+                <option value="Municipalidad">Municipalidad</option>
+                <option value="Universidad">Universidad</option>
+                <option value="Otro" selected>Otro</option>
+              </select>
+              <select id="logo-estado" class="p-3 border rounded-lg outline-none">
+                <option value="Activo" selected>Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+              <input
+                id="logo-archivo"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                required
+                class="p-2 border rounded-lg outline-none text-sm md:col-span-2"
+              />
+              <button
+                type="submit"
+                class="md:col-span-2 px-6 py-3 bg-teal-600 text-white rounded-lg font-bold hover:bg-teal-700"
+              >
+                Subir logo
+              </button>
+            </form>
+            <div id="logos-msg" class="text-sm font-medium hidden"></div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nombre</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Categoría</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Imagen</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Activo</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="table-logos" class="divide-y divide-gray-200"></tbody>
               </table>
             </div>
           </div>
