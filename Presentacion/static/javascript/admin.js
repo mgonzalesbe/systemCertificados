@@ -1,6 +1,6 @@
 const fetchOpts = { credentials: "same-origin" };
 
-/** null = aún no cargado; true/false = último resultado (para banner de SQL) */
+/** null = aún no cargado; true = OK; false = SQL caído (solo 503 / dbAvailable:false) */
 const adminDbHealth = { certificates: null, insights: null };
 
 function syncDbUnavailableBanner() {
@@ -9,6 +9,10 @@ function syncDbUnavailableBanner() {
   const show =
     adminDbHealth.certificates === false || adminDbHealth.insights === false;
   el.classList.toggle("hidden", !show);
+}
+
+function isDbUnavailablePayload(status, data) {
+  return status === 503 || (data && data.dbAvailable === false);
 }
 
 function escapeHtml(s) {
@@ -416,11 +420,11 @@ navBtns.forEach((btn) => {
     });
     document.getElementById(targetId).classList.add("active");
     navBtns.forEach((b) => {
-      b.classList.remove("bg-blue-600", "text-white");
+      b.classList.remove("bg-teal-600", "text-white");
       b.classList.add("bg-gray-200", "text-gray-700");
     });
     btn.classList.remove("bg-gray-200", "text-gray-700");
-    btn.classList.add("bg-blue-600", "text-white");
+    btn.classList.add("bg-teal-600", "text-white");
 
     if (targetId === "manage" || targetId === "dashboard") {
       loadCertificatesData();
@@ -586,7 +590,7 @@ function getDrillChartConfig(metricKey) {
         {
           label: "TGC por certificado (s)",
           data: values,
-          borderColor: "#2563eb",
+          borderColor: "#0d9488",
           backgroundColor: "rgba(37,99,235,0.08)",
           borderWidth: 2,
           fill: true,
@@ -594,7 +598,7 @@ function getDrillChartConfig(metricKey) {
           pointRadius: 5,
           pointHoverRadius: 7,
           pointStyle: "rectRot",
-          pointBackgroundColor: "#2563eb",
+          pointBackgroundColor: "#0d9488",
           pointBorderColor: "#1e3a8a",
         },
       ];
@@ -913,7 +917,7 @@ function setDashboardCardActive(metricKey) {
   document.querySelectorAll(".dashboard-chart-card").forEach((card) => {
     const isActive = card.dataset.chartKey === metricKey;
     card.classList.toggle("ring-2", isActive);
-    card.classList.toggle("ring-blue-300", isActive);
+    card.classList.toggle("ring-teal-300", isActive);
   });
 }
 
@@ -1585,10 +1589,10 @@ function appendCertRow(tbody, cert) {
   const tdMetrics = document.createElement("td");
   tdMetrics.className = "px-6 py-4 text-center";
   const tgcDiv = document.createElement("div");
-  tgcDiv.className = "text-xs text-blue-600 font-semibold";
+  tgcDiv.className = "text-xs text-teal-600 font-semibold";
   tgcDiv.textContent = `TGC: ${Number(cert.tgc || 0).toFixed(4)}s`;
   const tvDiv = document.createElement("div");
-  tvDiv.className = "text-xs text-purple-600 font-semibold";
+  tvDiv.className = "text-xs text-teal-600 font-semibold";
   tvDiv.textContent = `TV: ${Number(cert.tv || 0).toFixed(4)}s`;
   const valDiv = document.createElement("div");
   valDiv.className = `text-[10px] uppercase font-bold ${cert.isValid ? "text-emerald-600" : "text-gray-400"}`;
@@ -1602,7 +1606,7 @@ function appendCertRow(tbody, cert) {
   if (cert.hasPdf) {
     const a = document.createElement("a");
     a.href = `/api/certificates/${encodeURIComponent(cert.id)}/pdf`;
-    a.className = "text-blue-600 font-bold underline text-sm";
+    a.className = "text-teal-600 font-bold underline text-sm";
     a.textContent = "Descargar";
     a.setAttribute("download", "");
     tdPdf.appendChild(a);
@@ -1660,7 +1664,7 @@ async function loadCertificatesData() {
       return;
     }
     const data = await response.json().catch(() => ({}));
-    if (response.status === 503) {
+    if (isDbUnavailablePayload(response.status, data)) {
       adminDbHealth.certificates = false;
       syncDbUnavailableBanner();
       const msg =
@@ -1671,7 +1675,16 @@ async function loadCertificatesData() {
       renderCertPagination();
       return;
     }
-    if (!response.ok) throw new Error();
+    if (!response.ok) {
+      // Fallo de red/ruta (p. ej. Render en frío) — no confundir con SQL caído
+      adminDbHealth.certificates = null;
+      syncDbUnavailableBanner();
+      tbody.innerHTML =
+        '<tr><td colspan="6" class="p-4 text-center text-amber-800 font-semibold">No se pudo cargar el listado. Pulse «Reintentar» (a veces Render tarda en responder tras inactividad).</td></tr>';
+      emptyMsg.classList.add("hidden");
+      renderCertPagination();
+      return;
+    }
     adminDbHealth.certificates = true;
     syncDbUnavailableBanner();
     const certs = data.certificates || [];
@@ -1687,10 +1700,10 @@ async function loadCertificatesData() {
     }
     renderCertPagination();
   } catch {
-    adminDbHealth.certificates = false;
+    adminDbHealth.certificates = null;
     syncDbUnavailableBanner();
     tbody.innerHTML =
-      '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Error al cargar certificados.</td></tr>';
+      '<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Error al cargar certificados. Pulse «Reintentar».</td></tr>';
     emptyMsg.classList.add("hidden");
     renderCertPagination();
   }
@@ -1718,7 +1731,7 @@ function renderCertPagination() {
   for (let i = start; i <= end; i++) {
     const btn = document.createElement("button");
     btn.textContent = i;
-    btn.className = `px-3 py-1 rounded font-bold ${i === certPage ? "bg-blue-600 text-white" : "bg-gray-200 hover:bg-gray-300"}`;
+    btn.className = `px-3 py-1 rounded font-bold ${i === certPage ? "bg-teal-600 text-white" : "bg-gray-200 hover:bg-gray-300"}`;
     btn.disabled = i === certPage;
     btn.onclick = () => {
       certPage = i;
@@ -1782,10 +1795,25 @@ document
 
 function loadStatistics() {
   fetch("/api/dashboard/operativo", fetchOpts)
-    .then((r) => (r.ok ? r.json() : {}))
-    .then((data) => {
-      if (!data || data.dbAvailable === false) {
+    .then(async (r) => {
+      if (r.status === 401 || r.status === 403) {
+        window.location.href = "/";
+        return null;
+      }
+      const data = await r.json().catch(() => ({}));
+      return { status: r.status, ok: r.ok, data };
+    })
+    .then((res) => {
+      if (!res) return;
+      const { status, ok, data } = res;
+      if (isDbUnavailablePayload(status, data)) {
         adminDbHealth.insights = false;
+        syncDbUnavailableBanner();
+        return;
+      }
+      if (!ok || typeof data.emitidos === "undefined") {
+        // Error de carga (Render frío / 404 puntual): no marcar SQL como caído
+        adminDbHealth.insights = null;
         syncDbUnavailableBanner();
         return;
       }
@@ -1820,8 +1848,172 @@ function loadStatistics() {
           ? items.map((i) => `<span class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-teal-50 border border-teal-100 text-sm"><b>${escapeHtml(i.label)}</b> ${i.emitidos} emitidos</span>`).join("")
           : '<span class="text-gray-400 text-sm">Sin emisiones recientes</span>';
       }
+
+      renderOperativoCharts(data);
     })
-    .catch(() => {});
+    .catch(() => {
+      adminDbHealth.insights = null;
+      syncDbUnavailableBanner();
+    });
+}
+
+const operativoCharts = { estado: null, mensual: null, universidades: null, areas: null };
+
+function destroyChart(key) {
+  if (operativoCharts[key]) {
+    operativoCharts[key].destroy();
+    operativoCharts[key] = null;
+  }
+}
+
+function chartOrEmpty(canvasId, emptyMsg) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || typeof Chart === "undefined") return null;
+  const wrap = canvas.parentElement;
+  let empty = wrap?.querySelector(".chart-empty-msg");
+  if (!empty && wrap) {
+    empty = document.createElement("p");
+    empty.className = "chart-empty-msg absolute inset-0 flex items-center justify-center text-sm text-gray-400";
+    wrap.style.position = wrap.style.position || "relative";
+    wrap.appendChild(empty);
+  }
+  if (empty) empty.textContent = emptyMsg || "";
+  return { canvas, empty };
+}
+
+function renderOperativoCharts(data) {
+  if (typeof Chart === "undefined") return;
+
+  const activos = toFiniteNumber(data.activos || 0);
+  const revocados = toFiniteNumber(data.revocados || 0);
+  const estadoUi = chartOrEmpty("chart-estado", "");
+  if (estadoUi) {
+    destroyChart("estado");
+    const hasEstado = activos + revocados > 0;
+    if (estadoUi.empty) estadoUi.empty.textContent = hasEstado ? "" : "Sin certificados aún";
+    estadoUi.canvas.classList.toggle("opacity-0", !hasEstado);
+    if (hasEstado) {
+      operativoCharts.estado = new Chart(estadoUi.canvas.getContext("2d"), {
+        type: "doughnut",
+        data: {
+          labels: ["Activos", "Revocados"],
+          datasets: [{
+            data: [activos, revocados],
+            backgroundColor: ["#0d9488", "#e11d48"],
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: "bottom" } },
+        },
+      });
+    }
+  }
+
+  const mensual = Array.isArray(data.mensual) ? data.mensual.slice().reverse() : [];
+  const mensUi = chartOrEmpty("chart-mensual", "");
+  if (mensUi) {
+    destroyChart("mensual");
+    const hasMens = mensual.length > 0;
+    if (mensUi.empty) mensUi.empty.textContent = hasMens ? "" : "Sin emisiones recientes";
+    mensUi.canvas.classList.toggle("opacity-0", !hasMens);
+    if (hasMens) {
+      operativoCharts.mensual = new Chart(mensUi.canvas.getContext("2d"), {
+        type: "line",
+        data: {
+          labels: mensual.map((i) => i.label),
+          datasets: [{
+            label: "Emitidos",
+            data: mensual.map((i) => toFiniteNumber(i.emitidos || 0)),
+            borderColor: "#0f766e",
+            backgroundColor: "rgba(13, 148, 136, 0.18)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: "#0d9488",
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 } },
+            x: { grid: { display: false } },
+          },
+        },
+      });
+    }
+  }
+
+  const porUni = Array.isArray(data.porUniversidad) ? data.porUniversidad : [];
+  const uniUi = chartOrEmpty("chart-universidades", "");
+  if (uniUi) {
+    destroyChart("universidades");
+    const hasUni = porUni.length > 0;
+    if (uniUi.empty) uniUi.empty.textContent = hasUni ? "" : "Sin alumnos con universidad";
+    uniUi.canvas.classList.toggle("opacity-0", !hasUni);
+    if (hasUni) {
+      operativoCharts.universidades = new Chart(uniUi.canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: porUni.map((i) => i.nombre),
+          datasets: [{
+            label: "Alumnos",
+            data: porUni.map((i) => toFiniteNumber(i.total || 0)),
+            backgroundColor: "#0d9488",
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+            y: { grid: { display: false } },
+          },
+        },
+      });
+    }
+  }
+
+  const porArea = Array.isArray(data.porArea) ? data.porArea : [];
+  const areaUi = chartOrEmpty("chart-areas", "");
+  if (areaUi) {
+    destroyChart("areas");
+    const hasArea = porArea.length > 0;
+    if (areaUi.empty) areaUi.empty.textContent = hasArea ? "" : "Sin alumnos con área";
+    areaUi.canvas.classList.toggle("opacity-0", !hasArea);
+    if (hasArea) {
+      const palette = ["#0f766e", "#0d9488", "#14b8a6", "#2dd4bf", "#5eead4", "#99f6e4", "#134e4a", "#115e59"];
+      operativoCharts.areas = new Chart(areaUi.canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: porArea.map((i) => i.nombre),
+          datasets: [{
+            label: "Alumnos",
+            data: porArea.map((i) => toFiniteNumber(i.total || 0)),
+            backgroundColor: porArea.map((_, idx) => palette[idx % palette.length]),
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+            y: { grid: { display: false } },
+          },
+        },
+      });
+    }
+  }
 }
 
 function loadDashboardInsights() {
@@ -1932,7 +2124,7 @@ function setupBulkGeneration() {
       }
       return;
     }
-    const bodyTxt = document.getElementById("input-body-text")?.value?.trim() || "";
+    const bodyTxt = document.getElementById("input-body")?.value?.trim() || "";
     const presetSel = document.getElementById("select-body-preset");
     const payload = {
       student_ids: ids,

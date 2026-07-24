@@ -60,7 +60,7 @@ function renderFiltered() {
     if (c.hasPdf) {
       const a = document.createElement("a");
       a.href = `/api/certificates/${encodeURIComponent(c.id)}/pdf`;
-      a.className = "inline-block text-center px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700";
+      a.className = "inline-block text-center px-4 py-2 bg-teal-600 text-white rounded-lg font-bold text-sm hover:bg-teal-700";
       a.textContent = "Descargar PDF";
       a.setAttribute("download", "");
       right.appendChild(a);

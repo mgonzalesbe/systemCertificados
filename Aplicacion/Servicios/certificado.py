@@ -1228,6 +1228,9 @@ def buscar_certificados(q=None, page=1, page_size=5):
 
 def obtener_dashboard_operativo():
     """Resumen operativo hospitalario (sin métricas de tesis TGC/TV)."""
+    from Persistencia.database import ensure_usuarios_practica_columns
+
+    ensure_usuarios_practica_columns()
     vacio = {
         "emitidos": 0,
         "activos": 0,

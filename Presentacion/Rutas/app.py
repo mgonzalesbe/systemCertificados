@@ -27,7 +27,7 @@ from flask import (
 sys.path.insert(0, ruta_raiz)
 
 from Aplicacion.Servicios import certificado
-from Persistencia.database import init_db, get_db_connection
+from Persistencia.database import init_db, get_db_connection, ensure_usuarios_practica_columns
 from Aplicacion.Servicios import auth_usuarios
 from Aplicacion.Servicios.image_transparency import strip_uniform_background_to_png
 from Aplicacion.Servicios.email_certificado import enviar_correo_credenciales_registro, correo_habilitado
@@ -124,6 +124,7 @@ def auth_login():
 
 @app.route('/api/auth/register', methods=['POST'])
 def auth_register():
+    ensure_usuarios_practica_columns()
     datos = request.get_json(silent=True) or {}
     username = (datos.get('username') or '').strip()
     email = (datos.get('email') or '').strip()
@@ -272,6 +273,7 @@ def generate_certificate():
 @admin_required_api
 def generate_certificates_bulk():
     """Emite el mismo tipo de certificado a varios alumnos (por universidad/área)."""
+    ensure_usuarios_practica_columns()
     datos = request.get_json(silent=True) or {}
     student_ids = datos.get('student_ids') or []
     if not isinstance(student_ids, list) or not student_ids:
@@ -368,6 +370,8 @@ def list_students():
     query = request.args.get('q', '').strip()
     universidad = (request.args.get('universidad') or '').strip()
     area = (request.args.get('area') or '').strip()
+    # Autocuración: BD de producción puede no tener aún Universidad/Area
+    ensure_usuarios_practica_columns()
     conn = get_db_connection()
     if not conn:
         return jsonify({"success": False, "error": "Base de datos no disponible"}), 503
@@ -1129,11 +1133,26 @@ def api_certificates():
     })
 
 
-if __name__ == '__main__':
-    init_db()
-    auth_usuarios.asegurar_admin_por_defecto()
-    certificado.init_stats_from_db()
+def _bootstrap_app():
+    """Inicializa esquema/admin/stats al cargar el módulo (gunicorn no entra a __main__)."""
+    try:
+        init_db()
+    except Exception as exc:
+        print(f"[bootstrap] init_db: {exc}")
+    try:
+        auth_usuarios.asegurar_admin_por_defecto()
+    except Exception as exc:
+        print(f"[bootstrap] admin: {exc}")
+    try:
+        certificado.init_stats_from_db()
+    except Exception as exc:
+        print(f"[bootstrap] stats: {exc}")
 
+
+_bootstrap_app()
+
+
+if __name__ == '__main__':
     _debug = os.environ.get('FLASK_DEBUG', 'false').lower() in ('1', 'true', 'yes', 'y')
     _port = int(os.environ.get('PORT', '5000'))
     _host = os.environ.get('FLASK_HOST', '0.0.0.0')

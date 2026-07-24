@@ -328,6 +328,32 @@ def _ensure_usuarios(cursor):
     _ensure_usuarios_index(cursor)
 
 
+def ensure_usuarios_practica_columns():
+    """
+    Asegura columnas Universidad/Area (y demográficas) en Usuarios.
+    Seguro llamar en caliente desde APIs si el esquema de producción quedó atrasado.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return False
+    try:
+        cursor = conn.cursor()
+        if not _table_exists(cursor, "Usuarios"):
+            return False
+        _ensure_usuarios_columns(cursor)
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"ensure_usuarios_practica_columns: {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        conn.close()
+
+
 def _migrate_estadisticas_table(cursor):
     if _table_exists(cursor, "EstadisticasAplicacion") or not _table_exists(cursor, "EstadisticasApp"):
         return

@@ -87,11 +87,11 @@ document.getElementById("tab-login").addEventListener("click", () => {
   document.getElementById("form-register").classList.add("hidden");
   document
     .getElementById("tab-login")
-    .classList.add("bg-white", "shadow-sm", "text-blue-800");
+    .classList.add("bg-white", "shadow-sm", "text-teal-800");
   document.getElementById("tab-login").classList.remove("text-gray-600");
   document
     .getElementById("tab-register")
-    .classList.remove("bg-white", "shadow-sm", "text-blue-800");
+    .classList.remove("bg-white", "shadow-sm", "text-teal-800");
   document.getElementById("tab-register").classList.add("text-gray-600");
 });
 
@@ -101,11 +101,11 @@ document.getElementById("tab-register").addEventListener("click", () => {
   document.getElementById("form-login").classList.add("hidden");
   document
     .getElementById("tab-register")
-    .classList.add("bg-white", "shadow-sm", "text-blue-800");
+    .classList.add("bg-white", "shadow-sm", "text-teal-800");
   document.getElementById("tab-register").classList.remove("text-gray-600");
   document
     .getElementById("tab-login")
-    .classList.remove("bg-white", "shadow-sm", "text-blue-800");
+    .classList.remove("bg-white", "shadow-sm", "text-teal-800");
   document.getElementById("tab-login").classList.add("text-gray-600");
 });
 

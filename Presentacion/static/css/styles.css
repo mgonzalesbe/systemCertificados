@@ -20,7 +20,7 @@ body {
   color: #0f172a;
   background:
     radial-gradient(1200px 520px at -5% -10%, rgba(13, 148, 136, 0.16), transparent 65%),
-    radial-gradient(980px 460px at 110% -15%, rgba(2, 132, 199, 0.12), transparent 62%),
+    radial-gradient(980px 460px at 110% -15%, rgba(45, 212, 191, 0.12), transparent 62%),
     linear-gradient(180deg, #f0fdfa 0%, #f8fafc 55%, #f8fafc 100%);
 }
 
@@ -45,7 +45,7 @@ body:not(.dark-theme) .app-surface > header {
 body.dark-theme {
   color: #e2e8f0;
   background:
-    radial-gradient(1100px 500px at -10% -15%, rgba(59, 130, 246, 0.2), transparent 65%),
+    radial-gradient(1100px 500px at -10% -15%, rgba(15, 118, 110, 0.2), transparent 65%),
     radial-gradient(960px 460px at 110% -10%, rgba(14, 165, 233, 0.16), transparent 60%),
     linear-gradient(180deg, #0b1220 0%, #0f172a 55%, #111827 100%);
 }
@@ -87,7 +87,7 @@ input[type="password"]::-ms-clear {
   height: 320px;
   right: -120px;
   bottom: -150px;
-  background: radial-gradient(circle, rgba(2, 132, 199, 0.16), transparent 68%);
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.16), transparent 68%);
 }
 
 .auth-brand-logo {
@@ -214,7 +214,7 @@ button:focus-visible {
 body:not(.dark-theme) #main-nav {
   background: linear-gradient(180deg, rgba(241, 245, 249, 0.82), rgba(226, 232, 240, 0.7));
   border-color: rgba(148, 163, 184, 0.28);
-  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.08) inset;
+  box-shadow: 0 6px 20px rgba(19, 78, 74, 0.08) inset;
   border-radius: 1rem;
 }
 
@@ -234,17 +234,17 @@ body:not(.dark-theme) .nav-btn.bg-gray-200 {
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
 }
 
-.nav-btn.bg-blue-600 {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+.nav-btn.bg-teal-600 {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
   box-shadow:
-    0 8px 16px rgba(37, 99, 235, 0.3),
+    0 8px 16px rgba(13, 148, 136, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-body:not(.dark-theme) .nav-btn.bg-blue-600 {
+body:not(.dark-theme) .nav-btn.bg-teal-600 {
   box-shadow:
-    0 14px 24px rgba(37, 99, 235, 0.34),
-    0 4px 10px rgba(30, 64, 175, 0.26),
+    0 14px 24px rgba(13, 148, 136, 0.34),
+    0 4px 10px rgba(19, 78, 74, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
@@ -280,13 +280,13 @@ body:not(.dark-theme) #dashboard #card-verifications {
 }
 
 #dashboard .dashboard-chart-card:hover {
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 12px 30px rgba(13, 148, 136, 0.14);
   transform: translateY(-2px);
 }
 
 body:not(.dark-theme) #dashboard .dashboard-chart-card:hover {
   box-shadow:
-    0 18px 36px rgba(37, 99, 235, 0.2),
+    0 18px 36px rgba(13, 148, 136, 0.2),
     0 4px 12px rgba(2, 6, 23, 0.08);
 }
 
@@ -320,7 +320,7 @@ body:not(.dark-theme) #catalogs thead th {
 
 #manage tbody tr:hover,
 #catalogs tbody tr:hover {
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(13, 148, 136, 0.05);
 }
 
 body:not(.dark-theme) #manage tbody tr:nth-child(even),
@@ -330,7 +330,7 @@ body:not(.dark-theme) #catalogs tbody tr:nth-child(even) {
 
 body:not(.dark-theme) #manage tbody tr:hover,
 body:not(.dark-theme) #catalogs tbody tr:hover {
-  background: linear-gradient(90deg, rgba(219, 234, 254, 0.55), rgba(224, 242, 254, 0.3));
+  background: linear-gradient(90deg, rgba(204, 251, 241, 0.55), rgba(167, 243, 208, 0.3));
 }
 
 body:not(.dark-theme) #manage td,
@@ -338,8 +338,8 @@ body:not(.dark-theme) #catalogs td {
   color: #1e293b;
 }
 
-body:not(.dark-theme) .bg-blue-600 {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+body:not(.dark-theme) .bg-teal-600 {
+  background: linear-gradient(135deg, #0d9488, #0f766e) !important;
 }
 
 body:not(.dark-theme) .bg-emerald-600 {
@@ -366,13 +366,13 @@ body:not(.dark-theme) #cert-pagination button {
   min-width: 2.2rem;
 }
 
-body:not(.dark-theme) #cert-pagination button.bg-blue-600 {
+body:not(.dark-theme) #cert-pagination button.bg-teal-600 {
   color: #fff !important;
-  border-color: rgba(30, 64, 175, 0.45);
+  border-color: rgba(19, 78, 74, 0.45);
 }
 
 body:not(.dark-theme) #table-body-certs a {
-  color: #1d4ed8 !important;
+  color: #0f766e !important;
   text-underline-offset: 3px;
 }
 
@@ -401,12 +401,35 @@ body:not(.dark-theme) .shadow-lg,
 body:not(.dark-theme) .shadow-xl {
   box-shadow:
     0 14px 30px rgba(15, 23, 42, 0.08),
-    0 2px 8px rgba(59, 130, 246, 0.06) !important;
+    0 2px 8px rgba(15, 118, 110, 0.06) !important;
 }
 
 #db-unavailable-banner {
   border-color: #f59e0b !important;
   background: linear-gradient(180deg, rgba(254, 243, 199, 0.7), rgba(255, 251, 235, 0.84));
+}
+
+/* Carpetas colapsables de emisión PDF */
+.emit-folder > summary.emit-folder-summary {
+  list-style: none;
+}
+.emit-folder > summary.emit-folder-summary::-webkit-details-marker {
+  display: none;
+}
+.emit-folder > summary.emit-folder-summary::before {
+  content: "▸";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  font-size: 0.95rem;
+  transition: transform 0.15s ease;
+}
+.emit-folder[open] > summary.emit-folder-summary::before {
+  transform: rotate(90deg);
+}
+.emit-folder-icon {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
 body.dark-theme #main-nav {
@@ -415,7 +438,7 @@ body.dark-theme #main-nav {
 }
 
 body.dark-theme .app-shell::before {
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.18), transparent 70%);
+  background: radial-gradient(circle, rgba(15, 118, 110, 0.18), transparent 70%);
 }
 
 body.dark-theme .app-shell::after {
@@ -478,11 +501,11 @@ body.dark-theme .bg-gray-200 {
   background-color: rgba(30, 41, 59, 0.9) !important;
 }
 
-body.dark-theme .text-blue-600 {
+body.dark-theme .text-teal-600 {
   color: #93c5fd !important;
 }
 
-body.dark-theme .text-purple-600 {
+body.dark-theme .text-teal-600 {
   color: #c4b5fd !important;
 }
 
@@ -505,7 +528,7 @@ body.dark-theme #catalogs thead {
 
 body.dark-theme #manage tbody tr:hover,
 body.dark-theme #catalogs tbody tr:hover {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(15, 118, 110, 0.15);
 }
 
 body.dark-theme #db-unavailable-banner {

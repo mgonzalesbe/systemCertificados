@@ -2,7 +2,7 @@ import os
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from Persistencia.database import get_db_connection
+from Persistencia.database import get_db_connection, ensure_usuarios_practica_columns
 
 ROLE_ADMIN = "admin"
 ROLE_STUDENT = "student"
@@ -40,6 +40,7 @@ def crear_usuario(
     universidad=None,
     area=None,
 ):
+    ensure_usuarios_practica_columns()
     if role not in (ROLE_ADMIN, ROLE_STUDENT):
         raise ValueError("Rol inválido")
     username = (username or "").strip()
